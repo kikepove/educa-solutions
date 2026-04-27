@@ -9,6 +9,7 @@ export async function createTechnician(tenantId: string, data: {
   email: string
   phone?: string
   specialties?: string[]
+  password?: string // Nueva: contraseña opcional
 }) {
   const existing = await prisma.technician.findFirst({
     where: { tenantId, dni: data.dni },
@@ -19,7 +20,8 @@ export async function createTechnician(tenantId: string, data: {
   }
 
   const bcrypt = require('bcryptjs')
-  const tempPassword = Math.random().toString(36).slice(-8)
+  // Si no se proporciona contraseña, generar una temporal
+  const finalPassword = data.password || Math.random().toString(36).slice(-8)
 
   const [technician, user] = await prisma.$transaction([
     prisma.technician.create({
@@ -36,13 +38,13 @@ export async function createTechnician(tenantId: string, data: {
         dni: data.dni,
         phone: data.phone,
         role: 'TECNICO',
-        password: await bcrypt.hash(tempPassword, 12),
+        password: await bcrypt.hash(finalPassword, 12),
         tenantId,
       },
     }),
   ])
 
-  return { technician, user, tempPassword }
+  return { technician, user, password: data.password ? 'CUSTOM' : finalPassword }
 }
 
 export async function getTechnicians(tenantId: string) {
