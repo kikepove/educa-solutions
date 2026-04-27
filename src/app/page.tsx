@@ -1,6 +1,8 @@
 'use client'
 
 import Link from 'next/link'
+
+export const dynamic = 'force-dynamic'
 import { useState } from 'react'
 import { GraduationCap, Users, Calendar, Wrench, BarChart3, Shield, Check, ArrowRight, Menu, X } from 'lucide-react'
 import { Button } from '@/components/ui/Button'

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/types'
-import { getTenant } from '@/services/centros.service'
+import prisma from '@/lib/db'
 
 export default async function CentroInventarioPage() {
   const user = await getCurrentUser()
@@ -9,7 +9,9 @@ export default async function CentroInventarioPage() {
     redirect('/login')
   }
 
-  const tenant = await getTenant(user.tenantId)
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: user.tenantId }
+  })
 
   return (
     <div className="p-8">
