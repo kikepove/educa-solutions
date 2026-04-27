@@ -1,0 +1,416 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  ADMIN
+  TIC
+  PROFESOR
+  TECNICO
+  DIRECTOR
+}
+
+enum IncidentStatus {
+  ABIERTA
+  EN_PROCESO
+  RESUELTA
+  CERRADA
+}
+
+enum IncidentPriority {
+  BAJA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
+enum IncidentCategory {
+  HARDWARE
+  SOFTWARE
+  RED
+  AULA
+  OTRO
+}
+
+enum ReservationStatus {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+  COMPLETADA
+}
+
+enum ScheduleDay {
+  LUNES
+  MARTES
+  MIERCOLES
+  JUEVES
+  VIERNES
+  SABADO
+  DOMINGO
+}
+
+enum SubscriptionStatus {
+  ACTIVA
+  CANCELADA
+  PAST_DUE
+  TRIALING
+  INCOMPLETE
+}
+
+model Tenant {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  code          String   @unique
+  address       String?
+  phone         String?
+  email         String?
+  logo          String?
+  qrUrl         String?
+  isActive      Boolean  @default(true)
+  subscriptionId String? @unique
+  subscriptionStatus SubscriptionStatus @default(TRIALING)
+  stripeCustomerId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  users         User[]
+  classrooms    Classroom[]
+  teachers      Teacher[]
+  technicians   Technician[]
+  incidents     Incident[]
+  inventoryItems InventoryItem[]
+  reservations  Reservation[]
+  schedules     Schedule[]
+  subjects      Subject[]
+  guardDuties   GuardDuty[]
+
+  @@index([slug])
+  @@index([code])
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String
+  surname       String?
+  dni           String?  @unique
+  phone         String?
+  avatar        String?
+  role          UserRole @default(PROFESOR)
+  isActive      Boolean  @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  tenantId      String?
+  tenant        Tenant?  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  accounts      Account[]
+  sessions      Session[]
+  createdIncidents Incident[] @relation("CreatedByIncidents")
+  reservations  Reservation[]
+  scheduleCreatedBy Schedule[] @relation("ScheduleCreator")
+  guardDuties   GuardDuty[]
+
+  @@index([email])
+  @@index([tenantId])
+  @@index([role])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Teacher {
+  id            String   @id @default(cuid())
+  dni           String   @unique
+  name          String
+  surname       String
+  email         String
+  phone         String?
+  department    String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  incidents     Incident[]
+  schedules     Schedule[]
+  guardDuties   GuardDuty[]
+  substituteGuardDuties GuardDuty[] @relation("SubstituteTeacher")
+
+  @@unique([tenantId, dni])
+  @@index([tenantId])
+  @@index([email])
+}
+
+model Technician {
+  id            String   @id @default(cuid())
+  dni           String   @unique
+  name          String
+  surname       String
+  email         String
+  phone         String?
+  specialties   String[]
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  incidents     Incident[]
+  inventoryItems InventoryItem[]
+
+  @@unique([tenantId, dni])
+  @@index([tenantId])
+  @@index([email])
+}
+
+model Classroom {
+  id            String   @id @default(cuid())
+  name          String
+  code          String
+  capacity      Int?
+  floor         Int?
+  building      String?
+  description   String?
+  hasProjector  Boolean  @default(false)
+  hasComputer   Boolean  @default(false)
+  hasWhiteboard Boolean  @default(true)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  incidents     Incident[]
+  inventoryItems InventoryItem[]
+  reservations  Reservation[]
+  schedules     Schedule[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+model Subject {
+  id            String   @id @default(cuid())
+  name          String
+  code          String
+  color         String   @default("#3B82F6")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  schedules     Schedule[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+model Incident {
+  id            String   @id @default(cuid())
+  title         String
+  description   String   @db.Text
+  status        IncidentStatus @default(ABIERTA)
+  priority      IncidentPriority @default(MEDIA)
+  category      IncidentCategory @default(OTRO)
+  location      String?
+  solution      String?  @db.Text
+  resolvedAt    DateTime?
+  source        String   @default("WEB")
+  isPublic      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  classroomId   String?
+  classroom     Classroom? @relation(fields: [classroomId], references: [id], onDelete: SetNull)
+
+  teacherId     String?
+  teacher       Teacher?   @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+
+  technicianId  String?
+  technician    Technician? @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+
+  createdById   String
+  createdBy     User     @relation("CreatedByIncidents", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([priority])
+  @@index([category])
+  @@index([classroomId])
+  @@index([createdById])
+}
+
+model InventoryItem {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  serialNumber  String?
+  assetTag      String?  @unique
+  category      String
+  status        String   @default("DISPONIBLE")
+  purchaseDate  DateTime?
+  warrantyEnd   DateTime?
+  location      String?
+  notes         String?  @db.Text
+  imageUrl      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  classroomId   String?
+  classroom     Classroom? @relation(fields: [classroomId], references: [id], onDelete: SetNull)
+
+  technicianId  String?
+  technician    Technician? @relation(fields: [technicianId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, assetTag])
+  @@index([tenantId])
+  @@index([assetTag])
+  @@index([category])
+}
+
+model Reservation {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  startTime     DateTime
+  endTime       DateTime
+  status        ReservationStatus @default(PENDIENTE)
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deletedAt     DateTime?
+
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  classroomId   String
+  classroom     Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([classroomId])
+  @@index([userId])
+  @@index([startTime, endTime])
+}
+
+model Schedule {
+  id            String   @id @default(cuid())
+  day           ScheduleDay
+  startTime     String
+  endTime       String
+  weekNumber    Int?
+  isGenerated   Boolean  @default(false)
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  classroomId   String
+  classroom     Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  subjectId     String
+  subject       Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  teacherId     String
+  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  createdById   String
+  createdBy     User     @relation("ScheduleCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, classroomId, subjectId, teacherId, day, startTime])
+  @@index([tenantId])
+  @@index([classroomId])
+  @@index([teacherId])
+  @@index([day])
+}
+
+model GuardDuty {
+  id            String   @id @default(cuid())
+  date          DateTime
+  startTime     String
+  endTime       String
+  type          String   @default("ORDINARIA")
+  notes         String?  @db.Text
+  isCompensated Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  teacherId     String
+  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  substituteId  String?
+  substitute    Teacher? @relation("SubstituteTeacher", fields: [substituteId], references: [id], onDelete: SetNull)
+
+  createdById   String
+  createdBy     User     @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([teacherId])
+  @@index([date])
+}
