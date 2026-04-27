@@ -22,10 +22,10 @@ export class SchedulingEngine {
   
   // Estado del horario
   private assignedSlots: Map<SlotKey, ScheduleSlot> = new Map()
-  private teacherDayHours: Map<string, Set<string>> = new Map() // teacherId -> Set<`${day}-${hour}`>
-  private classroomDayHours: Map<string, Set<string>> = new Map() // classroomId -> Set<`${day}-${hour}`>
+  private teacherDayHours: Map<string, Set<string>> = new Map()
+  private classroomDayHours: Map<string, Set<string>> = new Map()
   private teacherConsecutiveHours: Map<string, Map<ScheduleDay, number>> = new Map()
-  private subjectAssignedHours: Map<string, number> = new Map() // subjectId -> horas asignadas
+  private subjectAssignedHours: Map<string, number> = new Map()
 
   constructor(tenantId: string) {
     this.tenantId = tenantId
@@ -41,11 +41,10 @@ export class SchedulingEngine {
   }> {
     this.resetState()
 
-    // Ordenar materias por dificultad (más restrictivas primero)
     const sortedSubjects = [...input.subjects].sort((a, b) => {
       const difficultyA = a.difficulty || 5
       const difficultyB = b.difficulty || 5
-      return difficultyB - difficultyA // Mayor dificultad primero
+      return difficultyB - difficultyA
     })
 
     const conflicts: ScheduleConflict[] = []
@@ -60,7 +59,6 @@ export class SchedulingEngine {
       while (hoursAssigned < hoursNeeded && attempts < maxAttempts) {
         attempts++
 
-        // Encontrar el mejor slot para esta materia
         const bestSlot = this.findBestSlot(subject, input)
 
         if (!bestSlot) {
@@ -74,14 +72,12 @@ export class SchedulingEngine {
           break
         }
 
-        // Verificar si el slot es válido
         const slotConflicts = this.validateSlot(bestSlot, input)
         if (slotConflicts.length === 0) {
           this.assignSlot(bestSlot)
           hoursAssigned++
-          totalScore += 10 // Puntos por asignación exitosa
+          totalScore += 10
         } else {
-          // Intentar siguiente mejor opción
           continue
         }
       }
@@ -99,29 +95,20 @@ export class SchedulingEngine {
     }
   }
 
-  /**
-   * Encontrar el mejor slot para una materia
-   */
   private findBestSlot(
     subject: SubjectInput,
     input: SchedulingInput
   ): ScheduleSlot | null {
-    const availableSlots: {
-      slot: ScheduleSlot
-      score: number
-    }[] = []
+    const availableSlots: { slot: ScheduleSlot; score: number }[] = []
 
     for (const day of this.days) {
       for (const hour of this.hours) {
-        // Encontrar profesor disponible
         const teacher = this.findAvailableTeacher(subject, day, hour, input)
         if (!teacher) continue
 
-        // Encontrar aula disponible
         const classroom = this.findAvailableClassroom(subject, day, hour, input)
         if (!classroom) continue
 
-        // Calcular puntuación del slot
         const score = this.calculateSlotScore(subject, teacher, classroom, day, hour, input)
 
         availableSlots.push({
@@ -143,14 +130,10 @@ export class SchedulingEngine {
 
     if (availableSlots.length === 0) return null
 
-    // Ordenar por puntuación (mayor primero)
     availableSlots.sort((a, b) => b.score - a.score)
     return availableSlots[0].slot
   }
 
-  /**
-   * Encontrar profesor disponible para una materia en un slot dado
-   */
   private findAvailableTeacher(
     subject: SubjectInput,
     day: ScheduleDay,
@@ -158,7 +141,6 @@ export class SchedulingEngine {
     input: SchedulingInput
   ): TeacherInput | null {
     const availableTeachers = input.teachers.filter(teacher => {
-      // Verificar que no esté ocupado en ese día/hora
       const teacherKey = `${teacher.id}`
       const dayHourKey = `${day}-${hour}`
       
@@ -166,7 +148,6 @@ export class SchedulingEngine {
         return false
       }
 
-      // Verificar disponibilidad del profesor
       const availability = input.availabilities.find(
         a => a.teacherId === teacher.id && a.day === day
       )
@@ -175,7 +156,6 @@ export class SchedulingEngine {
         return false
       }
 
-      // Verificar horas consecutivas
       const consecutiveHours = this.teacherConsecutiveHours.get(teacher.id)?.get(day) || 0
       const maxConsecutive = input.config.maxConsecutiveHours || 3
       
@@ -188,7 +168,6 @@ export class SchedulingEngine {
 
     if (availableTeachers.length === 0) return null
 
-    // Preferir profesores con menos horas asignadas (balancear carga)
     availableTeachers.sort((a, b) => {
       const hoursA = this.getTeacherAssignedHours(a.id)
       const hoursB = this.getTeacherAssignedHours(b.id)
@@ -198,9 +177,6 @@ export class SchedulingEngine {
     return availableTeachers[0]
   }
 
-  /**
-   * Encontrar aula disponible
-   */
   private findAvailableClassroom(
     subject: SubjectInput,
     day: ScheduleDay,
@@ -208,7 +184,6 @@ export class SchedulingEngine {
     input: SchedulingInput
   ): ClassroomInput | null {
     const availableClassrooms = input.classrooms.filter(classroom => {
-      // Verificar que no esté ocupada
       const classroomKey = `${classroom.id}`
       const dayHourKey = `${day}-${hour}`
       
@@ -216,7 +191,6 @@ export class SchedulingEngine {
         return false
       }
 
-      // Verificar requisitos de aula de la materia
       if (subject.requiredClassroomType) {
         if (classroom.type !== subject.requiredClassroomType) {
           return false
@@ -228,7 +202,6 @@ export class SchedulingEngine {
 
     if (availableClassrooms.length === 0) return null
 
-    // Preferir aulas con menor capacidad necesaria (optimización de recursos)
     availableClassrooms.sort((a, b) => {
       const capA = a.capacity || 999
       const capB = b.capacity || 999
@@ -238,9 +211,6 @@ export class SchedulingEngine {
     return availableClassrooms[0]
   }
 
-  /**
-   * Calcular puntuación de un slot
-   */
   private calculateSlotScore(
     subject: SubjectInput,
     teacher: TeacherInput,
@@ -251,54 +221,43 @@ export class SchedulingEngine {
   ): number {
     let score = 0
 
-    // PREFERENCIA: Evitar primeras/últimas horas (soft constraint)
     if (hour === 1 || hour === 7) {
       score -= 5
     } else {
       score += 5
     }
 
-    // PREFERENCIA: Agrupar clases de una misma materia
     const currentSubjectHours = this.subjectAssignedHours.get(subject.id) || 0
     if (currentSubjectHours > 0) {
-      // Penalizar si no está en días consecutivos (simplificado)
       score += 3
     }
 
-    // PREFERENCIA: Minimizar huecos en profesor
     const teacherHours = this.getTeacherAssignedHours(teacher.id)
     if (teacherHours > 0) {
       score += 2
     }
 
-    // PREFERENCIA: Balancear carga semanal
     score -= teacherHours * 0.5
 
     return score
   }
 
-  /**
-   * Asignar un slot al estado
-   */
   private assignSlot(slot: ScheduleSlot): void {
     const key: SlotKey = `${slot.day}-${slot.hour}-${slot.classroomId}`
     this.assignedSlots.set(key, slot)
 
-    // Actualizar estado del profesor
     const teacherKey = slot.teacherId
     if (!this.teacherDayHours.has(teacherKey)) {
       this.teacherDayHours.set(teacherKey, new Set())
     }
     this.teacherDayHours.get(teacherKey)!.add(`${slot.day}-${slot.hour}`)
 
-    // Actualizar estado del aula
     const classroomKey = slot.classroomId
     if (!this.classroomDayHours.has(classroomKey)) {
       this.classroomDayHours.set(classroomKey, new Set())
     }
     this.classroomDayHours.get(classroomKey)!.add(`${slot.day}-${slot.hour}`)
 
-    // Actualizar horas consecutivas
     if (!this.teacherConsecutiveHours.has(slot.teacherId)) {
       this.teacherConsecutiveHours.set(slot.teacherId, new Map())
     }
@@ -306,18 +265,13 @@ export class SchedulingEngine {
     const currentConsecutive = teacherDayMap.get(slot.day) || 0
     teacherDayMap.set(slot.day, currentConsecutive + 1)
 
-    // Actualizar horas de materia
     const currentSubjectHours = this.subjectAssignedHours.get(slot.subjectId) || 0
     this.subjectAssignedHours.set(slot.subjectId, currentSubjectHours + 1)
   }
 
-  /**
-   * Validar un slot contra hard constraints
-   */
   private validateSlot(slot: ScheduleSlot, input: SchedulingInput): ScheduleConflict[] {
     const conflicts: ScheduleConflict[] = []
 
-    // HARD: Sin solapamiento de profesor
     const teacherKey = slot.teacherId
     if (this.teacherDayHours.get(teacherKey)?.has(`${slot.day}-${slot.hour}`)) {
       conflicts.push({
@@ -329,7 +283,6 @@ export class SchedulingEngine {
       })
     }
 
-    // HARD: Sin solapamiento de aula
     const classroomKey = slot.classroomId
     if (this.classroomDayHours.get(classroomKey)?.has(`${slot.day}-${slot.hour}`)) {
       conflicts.push({
@@ -341,7 +294,6 @@ export class SchedulingEngine {
       })
     }
 
-    // HARD: Verificar disponibilidad
     const availability = input.availabilities.find(
       a => a.teacherId === slot.teacherId && a.day === slot.day
     )
@@ -358,56 +310,59 @@ export class SchedulingEngine {
     return conflicts
   }
 
-  /**
-   * Validar todos los slots
-   */
   validateAll(slots: ScheduleSlot[], input: SchedulingInput): ValidationResult {
     const conflicts: ScheduleConflict[] = []
     let score = 0
     const warnings: string[] = []
 
-    // Verificar hard constraints
-    const teacherSlots: Map<string, { day: ScheduleDay; hour: ScheduleHour }[]> = new Map()
-    const classroomSlots: Map<string, { day: ScheduleDay; hour: ScheduleHour }[]> = new Map()
+    const teacherDayMap: { [key: string]: { [day: string]: ScheduleHour[] } } = {}
+    const classroomDayMap: { [key: string]: { [day: string]: ScheduleHour[] } } = {}
 
     for (const slot of slots) {
-      // Agrupar por profesor
-      if (!teacherSlots.has(slot.teacherId)) {
-        teacherSlots.set(slot.teacherId, [])
-      }
-      teacherSlots.get(slot.teacherId)!.push({ day: slot.day, hour: slot.hour })
+      if (!teacherDayMap[slot.teacherId]) teacherDayMap[slot.teacherId] = {}
+      if (!teacherDayMap[slot.teacherId][slot.day]) teacherDayMap[slot.teacherId][slot.day] = []
+      teacherDayMap[slot.teacherId][slot.day].push(slot.hour)
 
-      // Agrupar por aula
-      if (!classroomSlots.has(slot.classroomId)) {
-        classroomSlots.set(slot.classroomId, [])
-      }
-      classroomSlots.get(slot.classroomId)!.push({ day: slot.day, hour: slot.hour })
+      if (!classroomDayMap[slot.classroomId]) classroomDayMap[slot.classroomId] = {}
+      if (!classroomDayMap[slot.classroomId][slot.day]) classroomDayMap[slot.classroomId][slot.day] = []
+      classroomDayMap[slot.classroomId][slot.day].push(slot.hour)
     }
 
-    // Verificar solapamientos
-    for (const [teacherId, slots] of teacherSlots) {
-      const slotSet = new Set(slots.map(s => `${s.day}-${s.hour}`))
-      if (slotSet.size < slots.length) {
-        conflicts.push({
-          type: 'TEACHER_OVERLAP',
-          teacherId,
-          description: `Profesor tiene solapamientos`,
-        })
-      }
-    }
-
-    for (const [classroomId, slots] of classroomSlots) {
-      const slotSet = new Set(slots.map(s => `${s.day}-${s.hour}`))
-      if (slotSet.size < slots.length) {
-        conflicts.push({
-          type: 'CLASSROOM_OVERLAP',
-          classroomId,
-          description: `Aula tiene solapamientos`,
-        })
+    for (const teacherId in teacherDayMap) {
+      for (const day in teacherDayMap[teacherId]) {
+        const hours = teacherDayMap[teacherId][day]
+        const sortedHours = [...hours].sort((a, b) => a - b)
+        
+        for (let i = 1; i < sortedHours.length; i++) {
+          if (sortedHours[i] - sortedHours[i - 1] > 1) {
+            conflicts.push({
+              type: 'TEACHER_OVERLAP',
+              day: day as ScheduleDay,
+              hour: sortedHours[i],
+              teacherId,
+              description: `Profesor tiene hueco entre horas ${sortedHours[i-1]} y ${sortedHours[i]}`,
+            })
+          }
+        }
       }
     }
 
-    // Verificar horas cumplidas por materia
+    for (const classroomId in classroomDayMap) {
+      for (const day in classroomDayMap[classroomId]) {
+        const hours = classroomDayMap[classroomId][day]
+        const slotSet = new Set(hours.map(h => `${h}`))
+        if (slotSet.size < hours.length) {
+          conflicts.push({
+            type: 'CLASSROOM_OVERLAP',
+            day: day as ScheduleDay,
+            hour: hours[0],
+            classroomId,
+            description: `Aula tiene solapamientos`,
+          })
+        }
+      }
+    }
+
     for (const subject of input.subjects) {
       const assignedHours = slots.filter(s => s.subjectId === subject.id).length
       if (assignedHours < subject.hoursPerWeek) {
@@ -417,7 +372,6 @@ export class SchedulingEngine {
       }
     }
 
-    // Calcular score basado en soft constraints
     score = this.calculateSoftScore(slots, input)
 
     return {
@@ -428,55 +382,38 @@ export class SchedulingEngine {
     }
   }
 
-  /**
-   * Calcular puntuación basada en soft constraints
-   */
   private calculateSoftScore(slots: ScheduleSlot[], input: SchedulingInput): number {
-    let score = 100 // Base score
+    let score = 100
 
-    // Penalizar huecos en horarios de profesores
-    const teacherDaySlots: Map<string, Map<ScheduleDay, ScheduleHour[]>> = new Map()
-    
+    const teacherDayMap: { [key: string]: { [day: string]: ScheduleHour[] } } = {}
+
     for (const slot of slots) {
-      const key = slot.teacherId
-      if (!teacherDaySlots.has(key)) {
-        teacherDaySlots.set(key, new Map())
-      }
-      const dayMap = teacherDaySlots.get(key)!
-      if (!dayMap.has(slot.day)) {
-        dayMap.set(slot.day, [])
-      }
-      dayMap.get(slot.day)!.push(slot.hour)
+      if (!teacherDayMap[slot.teacherId]) teacherDayMap[slot.teacherId] = {}
+      if (!teacherDayMap[slot.teacherId][slot.day]) teacherDayMap[slot.teacherId][slot.day] = []
+      teacherDayMap[slot.teacherId][slot.day].push(slot.hour)
     }
 
-    for (const [teacherId, dayMap] of teacherDaySlots) {
-      for (const [day, hours] of dayMap) {
-        const sortedHours = hours.sort((a, b) => a - b)
+    for (const teacherId in teacherDayMap) {
+      for (const day in teacherDayMap[teacherId]) {
+        const hours = teacherDayMap[teacherId][day].sort((a, b) => a - b)
         
-        // Contar huecos
-        for (let i = 1; i < sortedHours.length; i++) {
-          if (sortedHours[i] - sortedHours[i - 1] > 1) {
-            score -= 2 // Penalización por hueco
+        for (let i = 1; i < hours.length; i++) {
+          if (hours[i] - hours[i - 1] > 1) {
+            score -= 2
           }
         }
       }
     }
 
-    // Bonus por agrupación de materias
-    const subjectDayCount: Map<string, Set<ScheduleDay>> = new Map()
+    const subjectDayCount: { [key: string]: Set<ScheduleDay> } = {}
     for (const slot of slots) {
-      if (!subjectDayCount.has(slot.subjectId)) {
-        subjectDayCount.set(slot.subjectId, new Set())
-      }
-      subjectDayCount.get(slot.subjectId)!.add(slot.day)
+      if (!subjectDayCount[slot.subjectId]) subjectDayCount[slot.subjectId] = new Set()
+      subjectDayCount[slot.subjectId].add(slot.day)
     }
 
     return Math.max(0, score)
   }
 
-  /**
-   * Optimización con Simulated Annealing
-   */
   async optimize(
     slots: ScheduleSlot[],
     input: SchedulingInput,
@@ -492,11 +429,9 @@ export class SchedulingEngine {
     let bestScore = currentScore
 
     for (let i = 0; i < iterations; i++) {
-      // Generar nuevo estado (intercambiar dos slots)
       const newSlots = this.generateNeighbor(currentSlots, input)
       const newScore = this.calculateSoftScore(newSlots, input)
 
-      // Decidir si aceptar el nuevo estado
       if (newScore > currentScore) {
         currentSlots = newSlots
         currentScore = newScore
@@ -521,30 +456,23 @@ export class SchedulingEngine {
     return { slots: bestSlots, score: bestScore }
   }
 
-  /**
-   * Generar un vecino (intercambiar dos slots)
-   */
   private generateNeighbor(slots: ScheduleSlot[], input: SchedulingInput): ScheduleSlot[] {
     const newSlots = [...slots]
     
     if (newSlots.length < 2) return newSlots
 
-    // Intercambiar profesor o aula de dos slots aleatorios
     const idx1 = Math.floor(Math.random() * newSlots.length)
     let idx2 = Math.floor(Math.random() * newSlots.length)
     while (idx2 === idx1) {
       idx2 = Math.floor(Math.random() * newSlots.length)
     }
 
-    // Intentar intercambiar profesores
     const tempTeacher = newSlots[idx1].teacherId
     newSlots[idx1].teacherId = newSlots[idx2].teacherId
     newSlots[idx2].teacherId = tempTeacher
 
-    // Verificar que no haya conflictos
     const validation = this.validateAll(newSlots, input)
     if (!validation.isValid) {
-      // Revertir si hay conflictos
       newSlots[idx1].teacherId = newSlots[idx2].teacherId
       newSlots[idx2].teacherId = tempTeacher
     }
@@ -552,9 +480,6 @@ export class SchedulingEngine {
     return newSlots
   }
 
-  /**
-   * Obtener horas asignadas a un profesor
-   */
   private getTeacherAssignedHours(teacherId: string): number {
     let count = 0
     for (const slot of this.assignedSlots.values()) {
@@ -565,9 +490,6 @@ export class SchedulingEngine {
     return count
   }
 
-  /**
-   * Reiniciar estado
-   */
   private resetState(): void {
     this.assignedSlots.clear()
     this.teacherDayHours.clear()
@@ -577,9 +499,6 @@ export class SchedulingEngine {
   }
 }
 
-/**
- * Función principal para generar horario completo
- */
 export async function generateSchedule(
   tenantId: string,
   createdById: string,
@@ -589,7 +508,6 @@ export async function generateSchedule(
     hoursPerDay?: number
   }
 ): Promise<ScheduleGenerationResult> {
-  // Crear registro de generación
   const generation = await prisma.scheduleGeneration.create({
     data: {
       tenantId,
@@ -601,7 +519,6 @@ export async function generateSchedule(
   })
 
   try {
-    // Cargar datos
     const [subjects, teachers, classrooms, availabilities] = await Promise.all([
       prisma.subject.findMany({ where: { tenantId } }),
       prisma.teacher.findMany({ where: { tenantId, isActive: true } }),
@@ -625,7 +542,7 @@ export async function generateSchedule(
         id: s.id,
         name: s.name,
         code: s.code,
-        hoursPerWeek: 3, // Por defecto, debería venir de la materia
+        hoursPerWeek: 3,
         difficulty: 5,
       })),
       classrooms: classrooms.map(c => ({
@@ -650,18 +567,13 @@ export async function generateSchedule(
     }
 
     const engine = new SchedulingEngine(tenantId)
-    
-    // Paso 1: Generación greedy
     const greedyResult = await engine.generateGreedy(input)
-    
-    // Paso 2: Optimización
     const optimizedResult = await engine.optimize(greedyResult.slots, input, {
       iterations: 500,
       temperature: 50,
       coolingRate: 0.99,
     })
 
-    // Guardar slots en base de datos
     const savedSlots = await prisma.$transaction(
       optimizedResult.slots.map(slot =>
         prisma.schedule.create({
@@ -681,7 +593,6 @@ export async function generateSchedule(
       )
     )
 
-    // Actualizar generación
     await prisma.scheduleGeneration.update({
       where: { id: generation.id },
       data: {
@@ -736,9 +647,6 @@ export async function generateSchedule(
   }
 }
 
-/**
- * Validar horario existente
- */
 export async function validateSchedule(
   tenantId: string,
   scheduleId?: string
@@ -769,7 +677,6 @@ export async function validateSchedule(
     tenantId: s.tenantId,
   }))
 
-  // Cargar input para validación
   const [subjects, teachers, classrooms] = await Promise.all([
     prisma.subject.findMany({ where: { tenantId } }),
     prisma.teacher.findMany({ where: { tenantId } }),

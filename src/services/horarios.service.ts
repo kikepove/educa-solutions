@@ -1,6 +1,7 @@
 import prisma from '@/lib/db'
 import type { CreateScheduleInput } from '@/utils/validation'
 import { generateSchedule as generateScheduleEngine } from '@/lib/scheduling-engine'
+import type { ScheduleGenerationResult } from '@/types/scheduling'
 
 export async function createSchedule(
   tenantId: string,
@@ -153,94 +154,6 @@ export async function generateScheduleAdvanced(
   }
 ): Promise<ScheduleGenerationResult> {
   return generateScheduleEngine(tenantId, createdById, config)
-}
-
-import type { ScheduleGenerationResult } from '@/types/scheduling'
-  const [subjects, teachers, classroom] = await Promise.all([
-    prisma.subject.findMany({ where: { tenantId } }),
-    prisma.teacher.findMany({ where: { tenantId, isActive: true } }),
-    prisma.classroom.findUnique({ where: { id: classroomId } }),
-  ])
-
-  if (!classroom) throw new Error('Aula no encontrada')
-  if (subjects.length === 0) throw new Error('No hay asignaturas definidas')
-  if (teachers.length === 0) throw new Error('No hay profesores disponibles')
-
-  const days = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'] as const
-  const hours = [
-    { start: '08:00', end: '09:00' },
-    { start: '09:00', end: '10:00' },
-    { start: '10:00', end: '11:00' },
-    { start: '11:00', end: '11:30' },
-    { start: '11:30', end: '12:30' },
-    { start: '12:30', end: '13:30' },
-    { start: '13:30', end: '14:30' },
-  ]
-
-  const scheduleSlots: Array<{
-    day: typeof days[number]
-    startTime: string
-    endTime: string
-    subjectId: string
-    teacherId: string
-  }> = []
-
-  const availableSubjects = [...subjects]
-  const usedSlots: Map<string, string[]> = new Map()
-
-  for (const day of days) {
-    for (let i = 0; i < hours.length; i++) {
-      const hour = hours[i]
-      if (hour.start === '11:00') continue
-
-      let assigned = false
-      let attempts = 0
-
-      while (!assigned && attempts < 10) {
-        const subjectIndex = Math.floor(Math.random() * availableSubjects.length)
-        const subject = availableSubjects[subjectIndex]
-
-        const teacherForSubject = teachers.find(
-          (t) => !usedSlots.get(t.id)?.includes(`${day}-${hour.start}`)
-        )
-
-        if (teacherForSubject) {
-          scheduleSlots.push({
-            day,
-            startTime: hour.start,
-            endTime: hour.end,
-            subjectId: subject.id,
-            teacherId: teacherForSubject.id,
-          })
-
-          const teacherSlots = usedSlots.get(teacherForSubject.id) || []
-          teacherSlots.push(`${day}-${hour.start}`)
-          usedSlots.set(teacherForSubject.id, teacherSlots)
-
-          assigned = true
-        }
-
-        attempts++
-      }
-    }
-  }
-
-  await prisma.$transaction(
-    scheduleSlots.map((slot) =>
-      prisma.schedule.create({
-        data: {
-          ...slot,
-          weekNumber,
-          isGenerated: true,
-          classroomId,
-          tenantId,
-          createdById,
-        },
-      })
-    )
-  )
-
-  return scheduleSlots.length
 }
 
 export async function getTeacherSchedule(teacherId: string, weekNumber?: number) {
