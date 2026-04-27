@@ -1,5 +1,6 @@
 import prisma from '@/lib/db'
 import type { CreateScheduleInput } from '@/utils/validation'
+import { generateSchedule as generateScheduleEngine } from '@/lib/scheduling-engine'
 
 export async function createSchedule(
   tenantId: string,
@@ -132,6 +133,29 @@ export async function generateSchedulesAI(
   classroomId: string,
   weekNumber: number = 1
 ) {
+  // Usar el nuevo motor de generación
+  const result = await generateScheduleEngine(tenantId, createdById, {
+    maxConsecutiveHours: 3,
+    daysPerWeek: 5,
+    hoursPerDay: 7,
+  })
+  
+  return result.generatedSlots
+}
+
+export async function generateScheduleAdvanced(
+  tenantId: string,
+  createdById: string,
+  config?: {
+    maxConsecutiveHours?: number
+    daysPerWeek?: number
+    hoursPerDay?: number
+  }
+): Promise<ScheduleGenerationResult> {
+  return generateScheduleEngine(tenantId, createdById, config)
+}
+
+import type { ScheduleGenerationResult } from '@/types/scheduling'
   const [subjects, teachers, classroom] = await Promise.all([
     prisma.subject.findMany({ where: { tenantId } }),
     prisma.teacher.findMany({ where: { tenantId, isActive: true } }),

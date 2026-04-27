@@ -5,9 +5,11 @@ import {
   getSchedules,
   generateSchedulesAI,
   getTeacherSchedule,
+  generateScheduleAdvanced,
 } from '@/services/horarios.service'
 import { createScheduleSchema } from '@/utils/validation'
 import { hasPermission } from '@/utils/permissions'
+import type { ScheduleGenerationResult } from '@/types/scheduling'
 
 export async function GET(request: Request) {
   try {
@@ -18,6 +20,16 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const teacherSchedule = searchParams.get('teacherSchedule')
+    const generationId = searchParams.get('generationId')
+
+    // Obtener estado de generación
+    if (generationId) {
+      const { prisma } = require('@/lib/db')
+      const generation = await prisma.scheduleGeneration.findUnique({
+        where: { id: generationId },
+      })
+      return NextResponse.json(generation)
+    }
 
     if (teacherSchedule && user.role === 'PROFESOR') {
       const schedule = await getTeacherSchedule(user.id, parseInt(searchParams.get('weekNumber') || '1'))
@@ -59,6 +71,18 @@ export async function POST(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const generateAI = searchParams.get('generateAI')
+    const generateAdvanced = searchParams.get('generateAdvanced')
+
+    // Generación avanzada con el nuevo motor
+    if (generateAdvanced === 'true') {
+      const body = await request.json().catch(() => ({}))
+      const result: ScheduleGenerationResult = await generateScheduleAdvanced(
+        user.tenantId,
+        user.id,
+        body.config || {}
+      )
+      return NextResponse.json(result, { status: 200 })
+    }
 
     if (generateAI === 'true') {
       const body = await request.json()
