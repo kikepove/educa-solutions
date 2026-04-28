@@ -50,27 +50,35 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    console.log('[DEBUG POST tecnico] body:', body)
+    console.log('[DEBUG POST tecnico] raw body:', JSON.stringify(body))
     
-    try {
-      const data = createTechnicianSchema.parse(body)
-      console.log('[DEBUG POST tecnico] parsed:', data)
-      
-      const tenantId = user.role === 'ADMIN' && data.tenantIds?.[0] ? data.tenantIds[0] : user.tenantId
-      if (!tenantId) {
-        return NextResponse.json({ error: 'Selecciona al menos un centro' }, { status: 400 })
-      }
-
-      const result = await createTechnician(tenantId, { ...data, password: data.password }, data.tenantIds)
-      console.log('[DEBUG POST tecnico] created:', result)
-      
-      return NextResponse.json(result, { status: 201 })
-    } catch (parseError: any) {
-      console.error('[DEBUG POST tecnico] parse error:', parseError)
-      return NextResponse.json({ error: parseError.message || 'Error de validación', details: parseError.errors }, { status: 400 })
+    // Validación más flexible
+    const missing: string[] = []
+    if (!body.dni || body.dni.length < 1) missing.push('DNI')
+    if (!body.name || body.name.length < 2) missing.push('nombre')
+    if (!body.surname || body.surname.length < 2) missing.push('apellidos')
+    if (!body.email || !body.email.includes('@')) missing.push('email')
+    if (!body.tenantIds || !Array.isArray(body.tenantIds) || body.tenantIds.length === 0) missing.push('centros')
+    
+    if (missing.length > 0) {
+      console.log('[DEBUG POST tecnico] missing fields:', missing)
+      return NextResponse.json({ error: `Faltan campos: ${missing.join(', ')}` }, { status: 400 })
     }
+    
+    const data = createTechnicianSchema.parse(body)
+    console.log('[DEBUG POST tecnico] parsed:', data)
+      
+    const tenantId = user.role === 'ADMIN' && data.tenantIds?.[0] ? data.tenantIds[0] : user.tenantId
+    if (!tenantId) {
+      return NextResponse.json({ error: 'Selecciona al menos un centro' }, { status: 400 })
+    }
+
+    const result = await createTechnician(tenantId, { ...data, password: data.password }, data.tenantIds)
+    console.log('[DEBUG POST tecnico] created:', result)
+      
+    return NextResponse.json(result, { status: 201 })
   } catch (error: any) {
-    console.error('[DEBUG POST tecnico] error:', error)
+    console.error('[DEBUG POST tecnico] ERROR:', error.message, error.stack)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

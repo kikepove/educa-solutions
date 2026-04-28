@@ -51,7 +51,7 @@ export default function AdminTecnicosPage() {
 
   const loadTenants = async () => {
     try {
-      const data = await fetchApi<Tenant[]>('/centros')
+      const data = await fetchApi<Tenant[]>('/centros?showAll=true')
       setTenants(data)
     } catch (error) {
       console.error('Error loading tenants:', error)
@@ -71,17 +71,28 @@ export default function AdminTecnicosPage() {
   }
 
   const handleCreate = async () => {
+    if (selectedTenantIds.length === 0) {
+      toast.error('Selecciona al menos un centro')
+      return
+    }
+    
+    console.log('[DEBUG UI] Creating technician with:', { ...formData, tenantIds: selectedTenantIds })
+    
     setSaving(true)
     try {
+      const payload = { ...formData, tenantIds: selectedTenantIds }
+      console.log('[DEBUG UI] Payload:', JSON.stringify(payload))
+      
       await fetchApi<any>('/tecnicos', { 
         method: 'POST', 
-        body: JSON.stringify({ ...formData, tenantIds: selectedTenantIds })
+        body: JSON.stringify(payload)
       })
       setShowModal(false)
       resetForm()
       loadTechnicians()
       toast.success('Técnico creado correctamente')
     } catch (error: any) {
+      console.error('[DEBUG UI] Error:', error.message)
       toast.error(error.message || 'Error al crear técnico')
     } finally {
       setSaving(false)
