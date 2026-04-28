@@ -56,7 +56,7 @@ export async function createTechnician(tenantId: string, data: {
   for (const tid of idsToAssign) {
     await prisma.technicianTenant.create({
       data: {
-        technicianId: data.dni,
+        technicianId: technician.id,
         tenantId: tid,
       },
     })
@@ -120,10 +120,27 @@ export async function updateTechnician(
     throw new Error('Técnico no encontrado')
   }
 
-  return prisma.technician.update({
+  // Actualizar técnico
+  const updated = await prisma.technician.update({
     where: { id: technicianId },
     data,
   })
+
+  // Si se actualiza email, actualizar también el usuario asociado
+  if (data.email) {
+    await prisma.user.updateMany({
+      where: { dni: technician.dni, role: 'TECNICO' },
+      data: { 
+        email: data.email, 
+        name: data.name, 
+        surname: data.surname,
+        phone: data.phone,
+        isActive: data.isActive,
+      },
+    })
+  }
+
+  return updated
 }
 
 export async function deleteTechnician(technicianId: string, tenantId: string | null, userRole: string) {

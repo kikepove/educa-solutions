@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/types'
 import { getTenantById, updateTenant, deleteTenant, regenerateTenantQR } from '@/services/centros.service'
 import { createTenantSchema } from '@/utils/validation'
+import { hasPermission } from '@/utils/permissions'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/db'
 
@@ -77,6 +78,10 @@ export async function DELETE(
   try {
     const user = await getCurrentUser()
     if (!user || user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    if (!hasPermission(user.role, 'centros', 'delete')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

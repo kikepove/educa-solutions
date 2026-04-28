@@ -111,8 +111,13 @@ export async function updateTenant(id: string, data: Partial<CreateTenantInput>)
 }
 
 export async function deleteTenant(id: string) {
-  return prisma.tenant.update({
+  await prisma.tenant.update({
     where: { id },
+    data: { isActive: false },
+  })
+
+  await prisma.user.updateMany({
+    where: { tenantId: id },
     data: { isActive: false },
   })
 }

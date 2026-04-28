@@ -3,9 +3,224 @@
 import Link from 'next/link'
 
 export const dynamic = 'force-dynamic'
-import { useState } from 'react'
-import { GraduationCap, Users, Calendar, Wrench, BarChart3, Shield, Check, ArrowRight, Menu, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { GraduationCap, Users, Calendar, Wrench, BarChart3, Shield, Check, ArrowRight, Menu, X, AlertCircle, CheckCircle2, Laptop, Tablet, Clock, UsersRound, TrendingUp, Circle, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+
+type TabType = 'incidencias' | 'inventario' | 'reservas' | 'horarios'
+
+const mockIncidencias = [
+  { id: 1, title: 'Proyector aula 203 no funciona', status: 'ABIERTA', priority: 'ALTA', time: '2h' },
+  { id: 2, title: 'WiFi lento en biblioteca', status: 'EN_PROCESO', priority: 'MEDIA', time: '4h' },
+  { id: 3, title: 'Impresora atascada', status: 'RESUELTA', priority: 'BAJA', time: '1d' },
+]
+
+const mockInventario = [
+  { name: 'Ordenadores', total: 45, available: 38, category: 'hardware' },
+  { name: 'Tablets', total: 30, available: 25, category: 'hardware' },
+  { name: 'Proyectores', total: 12, available: 10, category: 'hardware' },
+  { name: 'Impresoras', total: 8, available: 7, category: 'hardware' },
+]
+
+const mockReservas = [
+  { aula: 'Aula 101', hora: '09:00 - 10:00', profesor: 'M. García', materia: 'Matemáticas' },
+  { aula: 'Aula 203', hora: '10:00 - 11:00', profesor: 'L. Martínez', materia: 'Física' },
+  { aula: 'Lab Chemistry', hora: '11:30 - 13:00', profesor: 'S. López', materia: 'Química' },
+]
+
+const mockHorarios = [
+  { day: 'LUNES', slots: [{ hora: '08:00', clase: 'Matemáticas', aula: '101' }, { hora: '09:00', clase: 'Física', aula: '203' }, { hora: '10:00', clase: 'Historia', aula: '102' }] },
+  { day: 'MARTES', slots: [{ hora: '08:00', clase: 'Historia', aula: '104' }, { hora: '09:00', clase: 'Matemáticas', aula: '101' }, { hora: '10:00', clase: 'Química', aula: 'Lab' }] },
+  { day: 'MIÉRCOLES', slots: [{ hora: '08:00', clase: 'Física', aula: '203' }, { hora: '09:00', clase: 'Historia', aula: '102' }, { hora: '10:00', clase: 'Matemáticas', aula: '101' }] },
+]
+
+function DashboardMockup() {
+  const [activeTab, setActiveTab] = useState<TabType>('incidencias')
+  const [isAnimating, setIsAnimating] = useState(false)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsAnimating(true)
+      setTimeout(() => setIsAnimating(false), 300)
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
+    { id: 'incidencias', label: 'Incidencias', icon: <AlertCircle className="w-4 h-4" /> },
+    { id: 'inventario', label: 'Inventario', icon: <Laptop className="w-4 h-4" /> },
+    { id: 'reservas', label: 'Reservas', icon: <Calendar className="w-4 h-4" /> },
+    { id: 'horarios', label: 'Horarios', icon: <Clock className="w-4 h-4" /> },
+  ]
+
+  return (
+    <div className="bg-slate-900 rounded-2xl p-2 shadow-2xl">
+      <div className="bg-slate-800 rounded-xl overflow-hidden">
+        <div className="bg-slate-700/80 px-4 py-3 flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-red-500" />
+          <div className="w-3 h-3 rounded-full bg-yellow-500" />
+          <div className="w-3 h-3 rounded-full bg-green-500" />
+        </div>
+
+        <div className="p-4">
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-all ${
+                  activeTab === tab.id
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className={`transition-all duration-300 ${isAnimating ? 'opacity-50' : 'opacity-100'}`}>
+            {activeTab === 'incidencias' && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2 bg-slate-700/50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-slate-300 mb-3">Tickets recientes</h4>
+                  <div className="space-y-2">
+                    {mockIncidencias.map((inc) => (
+                      <div key={inc.id} className="flex items-center justify-between p-2 bg-slate-600/30 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Circle className={`w-2 h-2 ${inc.status === 'ABIERTA' ? 'fill-red-500 text-red-500' : inc.status === 'EN_PROCESO' ? 'fill-yellow-500 text-yellow-500' : 'fill-green-500 text-green-500'}`} />
+                          <span className="text-sm text-slate-200">{inc.title}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`text-xs px-2 py-0.5 rounded ${inc.priority === 'ALTA' ? 'bg-red-500/20 text-red-400' : inc.priority === 'MEDIA' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-slate-500/20 text-slate-400'}`}>
+                            {inc.priority}
+                          </span>
+                          <span className="text-xs text-slate-500">{inc.time}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-slate-700/50 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-slate-300 mb-3">Estado</h4>
+                  <div className="flex items-end justify-around h-20">
+                    <div className="text-center">
+                      <div className="w-8 h-12 bg-red-500/30 rounded-t-lg flex items-end justify-center">
+                        <div className="w-full bg-red-500 h-3 rounded-t-sm" style={{ height: '40%' }} />
+                      </div>
+                      <span className="text-xs text-slate-400 mt-1">5</span>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-8 h-12 bg-yellow-500/30 rounded-t-lg flex items-end justify-center">
+                        <div className="w-full bg-yellow-500 h-4 rounded-t-sm" style={{ height: '60%' }} />
+                      </div>
+                      <span className="text-xs text-slate-400 mt-1">3</span>
+                    </div>
+                    <div className="text-center">
+                      <div className="w-8 h-12 bg-green-500/30 rounded-t-lg flex items-end justify-center">
+                        <div className="w-full bg-green-500 h-6 rounded-t-sm" style={{ height: '80%' }} />
+                      </div>
+                      <span className="text-xs text-slate-400 mt-1">12</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-500 mt-2">
+                    <span>Abiertos</span>
+                    <span>Proceso</span>
+                    <span>Resueltos</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'inventario' && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {mockInventario.map((item, i) => (
+                  <div key={item.name} className="bg-slate-700/50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Laptop className="w-4 h-4 text-primary-400" />
+                      <span className="text-sm text-slate-300">{item.name}</span>
+                    </div>
+                    <div className="text-2xl font-bold text-white">{item.total}</div>
+                    <div className="mt-2 h-2 bg-slate-600 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary-500 rounded-full transition-all duration-500"
+                        style={{ width: `${(item.available / item.total) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-slate-500 mt-1 block">{item.available} disponibles</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'reservas' && (
+              <div className="bg-slate-700/50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-slate-300">Reservas de hoy</h4>
+                  <button className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
+                    Ver todas <ChevronRight className="w-3 h-3" />
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {mockReservas.map((res, i) => (
+                    <div key={i} className="flex items-center justify-between p-2 bg-slate-600/30 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary-600/20 rounded-lg flex items-center justify-center">
+                          <Calendar className="w-5 h-5 text-primary-400" />
+                        </div>
+                        <div>
+                          <div className="text-sm text-slate-200">{res.aula}</div>
+                          <div className="text-xs text-slate-500">{res.hora}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-slate-300">{res.profesor}</div>
+                        <div className="text-xs text-slate-500">{res.materia}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'horarios' && (
+              <div className="bg-slate-700/50 rounded-lg p-4 overflow-x-auto">
+                <div className="flex items-center justify-between mb-3 min-w-[350px]">
+                  <h4 className="text-sm font-medium text-slate-300">Horario semanal</h4>
+                  <div className="flex items-center gap-2">
+                    <button className="p-1 hover:bg-slate-600 rounded">
+                      <ChevronRight className="w-4 h-4 text-slate-400 rotate-180" />
+                    </button>
+                    <button className="p-1 hover:bg-slate-600 rounded">
+                      <ChevronRight className="w-4 h-4 text-slate-400" />
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 min-w-[350px]">
+                  {mockHorarios.map((day) => (
+                    <div key={day.day} className="bg-slate-600/30 rounded-lg p-2">
+                      <div className="text-xs font-medium text-slate-400 mb-2 text-center">{day.day}</div>
+                      <div className="space-y-1">
+                        {day.slots.map((slot, i) => (
+                          <div key={i} className="text-xs bg-primary-600/30 rounded p-1.5 flex justify-between">
+                            <span className="text-slate-300">{slot.hora}</span>
+                            <span className="text-slate-200 truncate">{slot.clase}</span>
+                            <span className="text-slate-500">{slot.aula}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -86,20 +301,7 @@ export default function LandingPage() {
 
           {/* Dashboard Preview */}
           <div className="mt-16 relative">
-            <div className="bg-slate-900 rounded-2xl p-2 shadow-2xl">
-              <div className="bg-slate-800 rounded-xl overflow-hidden">
-                <div className="bg-slate-700 px-4 py-3 flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                  <div className="w-3 h-3 rounded-full bg-green-500" />
-                </div>
-                <div className="p-6 grid grid-cols-4 gap-4">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="bg-slate-700/50 rounded-lg h-24 animate-pulse" />
-                  ))}
-                </div>
-              </div>
-            </div>
+            <DashboardMockup />
           </div>
         </div>
       </section>
