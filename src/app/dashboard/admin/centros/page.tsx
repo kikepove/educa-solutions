@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Building2, Plus, Search, Pencil, Trash2, RefreshCw } from 'lucide-react'
+import { Building2, Plus, Search, Pencil, Trash2, RefreshCw, Eye, EyeOff } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -32,15 +32,17 @@ export default function CentrosPage() {
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showInactive, setShowInactive] = useState(true)
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [toggling, setToggling] = useState(false)
   const [formData, setFormData] = useState({ name: '', slug: '', email: '', phone: '', password: '' })
 
   const loadTenants = async () => {
     setLoading(true)
     try {
-      const data = await fetchApi<Tenant[]>('/centros')
+      const data = await fetchApi<Tenant[]>('/centros?showAll=true')
       setTenants(data)
     } catch (error) {
       console.error('Error loading tenants:', error)
@@ -79,6 +81,39 @@ export default function CentrosPage() {
       toast.error(error.message || 'Error al actualizar centro')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleToggleActive = async (tenant: Tenant) => {
+    setToggling(true)
+    try {
+      await fetchApi<Tenant>(`/centros/${tenant.id}`, { 
+        method: 'PUT', 
+        body: JSON.stringify({ isActive: !tenant.isActive }) 
+      })
+      loadTenants()
+      toast.success(tenant.isActive ? 'Centro desactivado' : 'Centro activado')
+    } catch (error: any) {
+      toast.error(error.message || 'Error al cambiar estado')
+    } finally {
+      setToggling(false)
+    }
+  }
+
+  const handleToggleSubscription = async (tenant: Tenant) => {
+    setToggling(true)
+    try {
+      const newStatus = tenant.subscriptionStatus === 'ACTIVA' ? 'CANCELADA' : 'ACTIVA'
+      await fetchApi<Tenant>(`/centros/${tenant.id}`, { 
+        method: 'PUT', 
+        body: JSON.stringify({ subscriptionStatus: newStatus }) 
+      })
+      loadTenants()
+      toast.success(newStatus === 'ACTIVA' ? 'Suscripción activada' : 'Suscripción cancelada')
+    } catch (error: any) {
+      toast.error(error.message || 'Error al cambiar suscripción')
+    } finally {
+      setToggling(false)
     }
   }
 
@@ -142,10 +177,32 @@ export default function CentrosPage() {
           <Badge variant={t.isActive ? 'success' : 'error'}>
             {t.isActive ? 'Activo' : 'Inactivo'}
           </Badge>
-          <Badge variant={t.subscriptionStatus === 'ACTIVA' ? 'success' : 'warning'}>
-            {t.subscriptionStatus}
-          </Badge>
+          <button
+            onClick={() => handleToggleActive(t)}
+            disabled={toggling}
+            className={`p-1 rounded ${t.isActive ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'}`}
+            title={t.isActive ? 'Desactivar' : 'Activar'}
+          >
+            {t.isActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
         </div>
+      ),
+    },
+    {
+      key: 'subscription',
+      header: 'Suscripción',
+      render: (t) => (
+        <button
+          onClick={() => handleToggleSubscription(t)}
+          disabled={toggling}
+          className={`px-2 py-1 rounded text-xs font-medium ${
+            t.subscriptionStatus === 'ACTIVA' 
+              ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+              : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+          }`}
+        >
+          {t.subscriptionStatus}
+        </button>
       ),
     },
     {
@@ -166,8 +223,10 @@ export default function CentrosPage() {
   ]
 
   const filteredTenants = tenants.filter(t => 
-    t.name.toLowerCase().includes(search.toLowerCase()) ||
-    t.slug.toLowerCase().includes(search.toLowerCase())
+    (showInactive || t.isActive) && (
+      t.name.toLowerCase().includes(search.toLowerCase()) ||
+      t.slug.toLowerCase().includes(search.toLowerCase())
+    )
   )
 
   return (
@@ -193,6 +252,15 @@ export default function CentrosPage() {
               icon={<Search className="w-4 h-4" />}
             />
           </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+              className="rounded"
+            />
+            <span className="text-slate-600">Mostrar inactivos</span>
+          </label>
           <Button variant="outline" onClick={loadTenants}>
             <RefreshCw className="w-4 h-4" />
           </Button>
@@ -262,4 +330,3 @@ export default function CentrosPage() {
     </div>
   )
 }
-
