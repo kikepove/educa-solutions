@@ -93,9 +93,10 @@ export async function deleteTechnician(technicianId: string, tenantId: string) {
   })
 }
 
-export async function getTechniciansByTenant(tenantId: string) {
+export async function getAllTechnicians() {
   return prisma.technician.findMany({
-    where: { tenantId, isActive: true },
+    where: { deletedAt: null },
     orderBy: { name: 'asc' },
+    include: { tenant: { select: { id: true, name: true } } },
   })
 }

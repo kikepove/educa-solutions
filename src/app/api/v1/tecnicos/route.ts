@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/types'
-import { createTechnician, getTechnicians } from '@/services/tecnicos.service'
+import { createTechnician, getTechnicians, getAllTechnicians } from '@/services/tecnicos.service'
 import { hasPermission } from '@/utils/permissions'
 import { z } from 'zod'
 
@@ -24,14 +24,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Admin can optionally filter by tenantId query param
-    const url = new URL(request.url)
-    const tenantId = url.searchParams.get('tenantId') || user.tenantId
-    if (!tenantId) {
-      return NextResponse.json({ error: 'tenantId requerido' }, { status: 400 })
-    }
-
-    const technicians = await getTechnicians(tenantId)
+    // Admin can see all technicians, others only their tenant
+    const technicians = user.role === 'ADMIN' 
+      ? await getAllTechnicians() 
+      : await getTechnicians(user.tenantId!)
     return NextResponse.json(technicians)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -58,7 +54,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'tenantId requerido' }, { status: 400 })
     }
 
-    const result = await createTechnician(tenantId, data)
+    const result = await createTechnician(tenantId, { ...data, password: body.password })
     return NextResponse.json(result, { status: 201 })
   } catch (error: any) {
     if (error.name === 'ZodError') {

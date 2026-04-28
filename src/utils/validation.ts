@@ -46,6 +46,16 @@ export const createTeacherSchema = z.object({
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres').optional(),
 })
 
+export const createTechnicianSchema = z.object({
+  dni: z.string().min(1, 'El DNI es requerido'),
+  name: z.string().min(2, 'El nombre es requerido'),
+  surname: z.string().min(2, 'Los apellidos son requeridos'),
+  email: z.string().email('Email inválido'),
+  phone: z.string().optional(),
+  specialties: z.array(z.string()).optional(),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres').optional(),
+})
+
 export const createIncidentSchema = z.object({
   title: z.string().min(3, 'El título es requerido'),
   description: z.string().min(10, 'La descripción debe tener al menos 10 caracteres'),

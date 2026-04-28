@@ -36,6 +36,7 @@ export default function AdminTecnicosPage() {
     phone: '',
     tenantId: '',
     specialties: [] as string[],
+    password: '',
   })
 
   useEffect(() => {
@@ -108,7 +109,7 @@ export default function AdminTecnicosPage() {
   }
 
   const resetForm = () => {
-    setFormData({ dni: '', name: '', surname: '', email: '', phone: '', tenantId: '', specialties: [] })
+    setFormData({ dni: '', name: '', surname: '', email: '', phone: '', tenantId: '', specialties: [], password: '' })
   }
 
   const openEditModal = (tech: Technician) => {
@@ -121,6 +122,7 @@ export default function AdminTecnicosPage() {
       phone: tech.phone || '',
       tenantId: tech.tenantId || '',
       specialties: tech.specialties || [],
+      password: '', // Siempre vacío al editar (opcional cambiar)
     })
     setShowModal(true)
   }
@@ -266,6 +268,13 @@ export default function AdminTecnicosPage() {
             placeholder="600 000 000"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          />
+          <Input
+            label={selectedTech ? 'Nueva Contraseña (dejar en blanco para mantener)' : 'Contraseña'}
+            type="password"
+            placeholder="Mínimo 6 caracteres"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
           />
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Centro</label>
