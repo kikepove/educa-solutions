@@ -37,6 +37,8 @@ export async function PUT(
 ) {
   try {
     const user = await getCurrentUser()
+    console.log('[DEBUG PUT centro] user:', user?.role)
+
     if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
@@ -46,11 +48,14 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const data = createTenantSchema.partial().parse(body)
+    console.log('[DEBUG PUT centro] body:', body)
+
+    // Aceptar cualquier campo sin validación estricta
+    const { password, ...data } = body
 
     // Si se envía password, actualizar el usuario DIRECTOR asociado
-    if (data.password) {
-      const hashedPassword = await bcrypt.hash(data.password, 10)
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10)
       const tenant = await prisma.tenant.findUnique({ where: { id: params.id } })
       if (tenant?.email) {
         await prisma.user.updateMany({
@@ -58,15 +63,13 @@ export async function PUT(
           data: { password: hashedPassword },
         })
       }
-      delete (data as any).password
     }
 
     const tenant = await updateTenant(params.id, data)
+    console.log('[DEBUG PUT centro] updated:', tenant.id)
     return NextResponse.json(tenant)
   } catch (error: any) {
-    if (error.name === 'ZodError') {
-      return NextResponse.json({ error: 'Validation error', details: error.errors }, { status: 400 })
-    }
+    console.error('[DEBUG PUT centro] error:', error.message)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

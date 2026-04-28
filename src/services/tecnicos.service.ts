@@ -11,58 +11,74 @@ export async function createTechnician(tenantId: string, data: {
   specialties?: string[]
   password?: string
 }, tenantIds?: string[]) {
-  // Verificar si ya existe un técnico con ese DNI o email
-  const existing = await prisma.technician.findFirst({
-    where: { OR: [{ dni: data.dni }, { email: data.email }] },
-  })
+  console.log('[createTechnician] Starting with:', { tenantId, dataDni: data.dni, dataEmail: data.email, tenantIds })
 
-  if (existing) {
-    throw new Error('Ya existe un técnico con ese DNI o email')
-  }
+  try {
+    // Verificar si ya existe un técnico con ese DNI o email
+    const existing = await prisma.technician.findFirst({
+      where: { OR: [{ dni: data.dni }, { email: data.email }] },
+    })
 
-  // Si no se proporciona contraseña, generar una temporal
-  const finalPassword = data.password || Math.random().toString(36).slice(-8)
-  const hashedPassword = await bcrypt.hash(finalPassword, 12)
+    if (existing) {
+      console.log('[createTechnician] Existing found:', existing.id)
+      throw new Error('Ya existe un técnico con ese DNI o email')
+    }
 
-  // Crear el técnico
-  const technician = await prisma.technician.create({
-    data: {
-      dni: data.dni,
-      name: data.name,
-      surname: data.surname,
-      email: data.email,
-      phone: data.phone,
-      specialties: data.specialties || [],
-    },
-  })
+    // Si no se proporciona contraseña, generar una temporal
+    const finalPassword = data.password || Math.random().toString(36).slice(-8)
+    console.log('[createTechnician] Generated password')
+    
+    const hashedPassword = await bcrypt.hash(finalPassword, 12)
 
-  // Crear el usuario asociado
-  await prisma.user.create({
-    data: {
-      email: data.email,
-      name: data.name,
-      surname: data.surname,
-      dni: data.dni,
-      phone: data.phone,
-      role: 'TECNICO',
-      password: hashedPassword,
-      tenantId,
-      isActive: true,
-    },
-  })
-
-  // Asignar a múltiples centros si se proporcionan
-  const idsToAssign = tenantIds && tenantIds.length > 0 ? tenantIds : [tenantId]
-  for (const tid of idsToAssign) {
-    await prisma.technicianTenant.create({
+    // Crear el técnico
+    console.log('[createTechnician] Creating technician in DB...')
+    const technician = await prisma.technician.create({
       data: {
-        technicianId: technician.id,
-        tenantId: tid,
+        dni: data.dni,
+        name: data.name,
+        surname: data.surname,
+        email: data.email,
+        phone: data.phone,
+        specialties: data.specialties || [],
       },
     })
-  }
+    console.log('[createTechnician] Technician created:', technician.id)
 
-  return { technician, password: data.password ? 'CUSTOM' : finalPassword }
+    // Crear el usuario asociado
+    console.log('[createTechnician] Creating user...')
+    await prisma.user.create({
+      data: {
+        email: data.email,
+        name: data.name,
+        surname: data.surname,
+        dni: data.dni,
+        phone: data.phone,
+        role: 'TECNICO',
+        password: hashedPassword,
+        tenantId,
+        isActive: true,
+      },
+    })
+    console.log('[createTechnician] User created')
+
+    // Asignar a múltiples centros si se proporcionan
+    const idsToAssign = tenantIds && tenantIds.length > 0 ? tenantIds : [tenantId]
+    console.log('[createTechnician] Assigning to centers:', idsToAssign)
+    for (const tid of idsToAssign) {
+      await prisma.technicianTenant.create({
+        data: {
+          technicianId: technician.id,
+          tenantId: tid,
+        },
+      })
+    }
+    console.log('[createTechnician] Done')
+
+    return { technician, password: data.password ? 'CUSTOM' : finalPassword }
+  } catch (error: any) {
+    console.error('[createTechnician] ERROR:', error.message, error.stack)
+    throw error
+  }
 }
 
 export async function getTechnicians(tenantId: string) {
@@ -102,79 +118,83 @@ export async function updateTechnician(
     isActive: boolean
   }>
 ) {
-  const where: any = {
-    id: technicianId,
-    deletedAt: null,
-  }
+  console.log('[updateTechnician] Starting:', { technicianId, userRole, data })
 
-  // Si no es ADMIN, filtrar por tenant
-  if (userRole !== 'ADMIN') {
-    where.technicianTenants = {
-      some: { tenantId },
-    }
+  // Para ADMIN, buscar directamente por ID
+  // Para otros roles, verificar que pertenece a su tenant
+  let technician
+  if (userRole === 'ADMIN') {
+    technician = await prisma.technician.findUnique({ where: { id: technicianId } })
+  } else if (tenantId) {
+    technician = await prisma.technician.findFirst({
+      where: { 
+        id: technicianId,
+        deletedAt: null,
+        technicianTenants: {
+          some: { tenantId },
+        },
+      },
+    })
   }
-
-  const technician = await prisma.technician.findFirst({ where })
 
   if (!technician) {
+    console.log('[updateTechnician] Technician not found for id:', technicianId)
     throw new Error('Técnico no encontrado')
   }
+
+  console.log('[updateTechnician] Found:', technician.id, technician.dni)
 
   // Actualizar técnico
   const updated = await prisma.technician.update({
     where: { id: technicianId },
     data,
   })
+  console.log('[updateTechnician] Updated technician')
 
-  // Si se actualiza email, actualizar también el usuario asociado
-  if (data.email) {
-    const userData: any = { 
-      email: data.email, 
-      isActive: data.isActive,
-    }
-    if (data.name !== undefined) userData.name = data.name
-    if (data.surname !== undefined) userData.surname = data.surname
-    if (data.phone !== undefined) userData.phone = data.phone
-    
+  // Actualizar también el usuario asociado
+  const userData: any = {}
+  if (data.email !== undefined) userData.email = data.email
+  if (data.name !== undefined) userData.name = data.name
+  if (data.surname !== undefined) userData.surname = data.surname
+  if (data.phone !== undefined) userData.phone = data.phone
+  if (data.isActive !== undefined) userData.isActive = data.isActive
+  
+  if (Object.keys(userData).length > 0) {
     await prisma.user.updateMany({
       where: { dni: technician.dni, role: 'TECNICO' },
       data: userData,
     })
-  } else if (data.name || data.surname || data.phone || data.isActive !== undefined) {
-    const userData: any = {}
-    if (data.name !== undefined) userData.name = data.name
-    if (data.surname !== undefined) userData.surname = data.surname
-    if (data.phone !== undefined) userData.phone = data.phone
-    if (data.isActive !== undefined) userData.isActive = data.isActive
-    
-    await prisma.user.updateMany({
-      where: { dni: technician.dni, role: 'TECNICO' },
-      data: userData,
-    })
+    console.log('[updateTechnician] Updated user')
   }
 
-  return updated
+return updated
 }
 
 export async function deleteTechnician(technicianId: string, tenantId: string | null, userRole: string) {
-  const where: any = {
-    id: technicianId,
-    deletedAt: null,
-  }
+  console.log('[deleteTechnician] Starting:', { technicianId, userRole })
 
-  // Si no es ADMIN, filtrar por tenant
-  if (userRole !== 'ADMIN') {
-    where.technicianTenants = {
-      some: { tenantId },
-    }
+  let technician
+  if (userRole === 'ADMIN') {
+    technician = await prisma.technician.findUnique({ where: { id: technicianId } })
+  } else if (tenantId) {
+    technician = await prisma.technician.findFirst({
+      where: { 
+        id: technicianId,
+        deletedAt: null,
+        technicianTenants: {
+          some: { tenantId },
+        },
+      },
+    })
   }
-
-  const technician = await prisma.technician.findFirst({ where })
 
   if (!technician) {
+    console.log('[deleteTechnician] Not found:', technicianId)
     throw new Error('Técnico no encontrado')
   }
 
+  console.log('[deleteTechnician] Found, deleting:', technician.id)
+  
   return prisma.technician.update({
     where: { id: technicianId },
     data: { deletedAt: new Date() },
