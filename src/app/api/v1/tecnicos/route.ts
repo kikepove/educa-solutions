@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/types'
-import { createTechnician, getTechnicians, getAllTechnicians } from '@/services/tecnicos.service'
+import { createTechnician, getTechnicians, getAllTechnicians, updateTechnician, deleteTechnician, assignTechnicianToTenant, removeTechnicianFromTenant } from '@/services/tecnicos.service'
 import { hasPermission } from '@/utils/permissions'
 import { z } from 'zod'
 
@@ -11,6 +11,8 @@ const createTechnicianSchema = z.object({
   email: z.string().email('Email inválido'),
   phone: z.string().optional(),
   specialties: z.array(z.string()).optional(),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres').optional(),
+  tenantIds: z.array(z.string()).min(1, 'Selecciona al menos un centro'),
 })
 
 export async function GET(request: Request) {
@@ -49,12 +51,20 @@ export async function POST(request: Request) {
     const data = createTechnicianSchema.parse(body)
     
     // Admin can specify tenantId in body, others use their own tenantId
-    const tenantId = user.role === 'ADMIN' && body.tenantId ? body.tenantId : user.tenantId
+    const tenantId = user.role === 'ADMIN' && data.tenantIds?.[0] ? data.tenantIds[0] : user.tenantId
     if (!tenantId) {
       return NextResponse.json({ error: 'tenantId requerido' }, { status: 400 })
     }
 
-    const result = await createTechnician(tenantId, { ...data, password: body.password })
+    const result = await createTechnician(tenantId, { ...data, password: data.password })
+    
+    // Asignar a múltiples centros si es admin y envió tenantIds
+    if (user.role === 'ADMIN' && data.tenantIds && data.tenantIds.length > 0) {
+      for (const tid of data.tenantIds) {
+        await assignTechnicianToTenant(result.technician.id, tid)
+      }
+    }
+    
     return NextResponse.json(result, { status: 201 })
   } catch (error: any) {
     if (error.name === 'ZodError') {

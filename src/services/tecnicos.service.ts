@@ -9,25 +9,29 @@ export async function createTechnician(tenantId: string, data: {
   email: string
   phone?: string
   specialties?: string[]
-  password?: string // Nueva: contraseña opcional
+  password?: string
 }) {
+  // Verificar si ya existe un técnico con ese DNI o email
   const existing = await prisma.technician.findFirst({
-    where: { tenantId, dni: data.dni },
+    where: { OR: [{ dni: data.dni }, { email: data.email }] },
   })
 
   if (existing) {
-    throw new Error('Ya existe un técnico con ese DNI')
+    throw new Error('Ya existe un técnico con ese DNI o email')
   }
 
-  const bcrypt = require('bcryptjs')
   // Si no se proporciona contraseña, generar una temporal
   const finalPassword = data.password || Math.random().toString(36).slice(-8)
 
   const [technician, user] = await prisma.$transaction([
     prisma.technician.create({
       data: {
-        ...data,
-        tenantId,
+        dni: data.dni,
+        name: data.name,
+        surname: data.surname,
+        email: data.email,
+        phone: data.phone,
+        specialties: data.specialties || [],
       },
     }),
     prisma.user.create({
@@ -39,6 +43,12 @@ export async function createTechnician(tenantId: string, data: {
         phone: data.phone,
         role: 'TECNICO',
         password: await bcrypt.hash(finalPassword, 12),
+        tenantId,
+      },
+    }),
+    prisma.technicianTenant.create({
+      data: {
+        technicianId: data.dni,
         tenantId,
       },
     }),

@@ -77,13 +77,15 @@ model Tenant {
   subscriptionId     String?            @unique
   subscriptionStatus SubscriptionStatus @default(TRIALING)
   stripeCustomerId   String?
+  trialEndsAt        DateTime? // Fecha fin de periodo trial
+  maxRecords         Int? // Límite de registros (null = ilimitado)
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
   users                 User[]                @relation("TenantUsers")
   classrooms            Classroom[]           @relation("TenantClassrooms")
   teachers              Teacher[]             @relation("TenantTeachers")
-  technicians           Technician[]          @relation("TenantTechnicians")
+  technicianTenants     TechnicianTenant[]    @relation("TenantTechnicianTenants")
   incidents             Incident[]            @relation("TenantIncidents")
   inventoryItems        InventoryItem[]       @relation("TenantInventoryItems")
   reservations          Reservation[]         @relation("TenantReservations")
@@ -197,7 +199,7 @@ model Technician {
   dni         String    @unique
   name        String
   surname     String
-  email       String
+  email       String    @unique
   phone       String?
   specialties String[]
   isActive    Boolean   @default(true)
@@ -205,15 +207,27 @@ model Technician {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  tenantId String
-  tenant   Tenant @relation("TenantTechnicians", fields: [tenantId], references: [id], onDelete: Cascade)
+  technicianTenants TechnicianTenant[]
+  incidents         Incident[]         @relation("TechnicianIncidents")
+  inventoryItems    InventoryItem[]    @relation("TechnicianInventoryItems")
 
-  incidents      Incident[]      @relation("TechnicianIncidents")
-  inventoryItems InventoryItem[] @relation("TechnicianInventoryItems")
-
-  @@unique([tenantId, dni])
-  @@index([tenantId])
   @@index([email])
+  @@index([dni])
+}
+
+model TechnicianTenant {
+  id           String   @id @default(cuid())
+  technicianId String
+  tenantId     String
+  assignedAt   DateTime @default(now())
+  isActive     Boolean  @default(true)
+
+  technician Technician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+  tenant     Tenant     @relation("TenantTechnicianTenants", fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([technicianId, tenantId])
+  @@index([technicianId])
+  @@index([tenantId])
 }
 
 model Classroom {

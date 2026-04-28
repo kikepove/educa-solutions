@@ -17,26 +17,30 @@ interface Tenant {
   name: string
 }
 
+interface TechnicianWithTenants extends Technician {
+  technicianTenants?: Array<{ tenant: Tenant }>
+}
+
 export default function AdminTecnicosPage() {
   const { data: session } = useSession()
-  const [technicians, setTechnicians] = useState<Technician[]>([])
+  const [technicians, setTechnicians] = useState<TechnicianWithTenants[]>([])
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [selectedTech, setSelectedTech] = useState<Technician | null>(null)
+  const [selectedTech, setSelectedTech] = useState<TechnicianWithTenants | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [selectedTenantIds, setSelectedTenantIds] = useState<string[]>([])
   const [formData, setFormData] = useState({
     dni: '',
     name: '',
     surname: '',
     email: '',
     phone: '',
-    tenantId: '',
-    specialties: [] as string[],
     password: '',
+    specialties: [] as string[],
   })
 
   useEffect(() => {
@@ -56,7 +60,7 @@ export default function AdminTecnicosPage() {
   const loadTechnicians = async () => {
     setLoading(true)
     try {
-      const data = await fetchApi<Technician[]>('/tecnicos')
+      const data = await fetchApi<TechnicianWithTenants[]>('/tecnicos')
       setTechnicians(data)
     } catch (error) {
       console.error('Error loading technicians:', error)
@@ -68,7 +72,10 @@ export default function AdminTecnicosPage() {
   const handleCreate = async () => {
     setSaving(true)
     try {
-      await fetchApi<any>('/tecnicos', { method: 'POST', body: JSON.stringify(formData) })
+      await fetchApi<any>('/tecnicos', { 
+        method: 'POST', 
+        body: JSON.stringify({ ...formData, tenantIds: selectedTenantIds })
+      })
       setShowModal(false)
       resetForm()
       loadTechnicians()
@@ -82,7 +89,10 @@ export default function AdminTecnicosPage() {
   const handleUpdate = async () => {
     setSaving(true)
     try {
-      await fetchApi<any>(`/tecnicos/${selectedTech?.id}`, { method: 'PUT', body: JSON.stringify(formData) })
+      await fetchApi<any>(`/tecnicos/${selectedTech?.id}`, { 
+        method: 'PUT', 
+        body: JSON.stringify({ ...formData, tenantIds: selectedTenantIds })
+      })
       setShowModal(false)
       setSelectedTech(null)
       resetForm()
@@ -109,10 +119,11 @@ export default function AdminTecnicosPage() {
   }
 
   const resetForm = () => {
-    setFormData({ dni: '', name: '', surname: '', email: '', phone: '', tenantId: '', specialties: [], password: '' })
+    setFormData({ dni: '', name: '', surname: '', email: '', phone: '', password: '', specialties: [] })
+    setSelectedTenantIds([])
   }
 
-  const openEditModal = (tech: Technician) => {
+  const openEditModal = (tech: TechnicianWithTenants) => {
     setSelectedTech(tech)
     setFormData({
       dni: tech.dni || '',
@@ -120,19 +131,27 @@ export default function AdminTecnicosPage() {
       surname: tech.surname || '',
       email: tech.email || '',
       phone: tech.phone || '',
-      tenantId: tech.tenantId || '',
+      password: '',
       specialties: tech.specialties || [],
-      password: '', // Siempre vacío al editar (opcional cambiar)
     })
+    setSelectedTenantIds(tech.technicianTenants?.map(tt => tt.tenant.id) || [])
     setShowModal(true)
   }
 
-  const openDeleteConfirm = (tech: Technician) => {
+  const openDeleteConfirm = (tech: TechnicianWithTenants) => {
     setSelectedTech(tech)
     setShowDeleteModal(true)
   }
 
-  const columns: Column<Technician>[] = [
+  const toggleTenant = (tenantId: string) => {
+    if (selectedTenantIds.includes(tenantId)) {
+      setSelectedTenantIds(selectedTenantIds.filter(id => id !== tenantId))
+    } else {
+      setSelectedTenantIds([...selectedTenantIds, tenantId])
+    }
+  }
+
+  const columns: Column<TechnicianWithTenants>[] = [
     {
       key: 'name',
       header: 'Nombre',
@@ -144,12 +163,15 @@ export default function AdminTecnicosPage() {
       render: (t) => <span className="text-slate-500">{t.email}</span>,
     },
     {
-      key: 'tenant',
-      header: 'Centro',
-      render: (t) => {
-        const tenant = tenants.find(ten => ten.id === t.tenantId)
-        return <span className="text-slate-500">{tenant?.name || 'N/A'}</span>
-      },
+      key: 'tenants',
+      header: 'Centros',
+      render: (t) => (
+        <div className="flex flex-wrap gap-1">
+          {t.technicianTenants?.map((tt, i) => (
+            <Badge key={i} variant="info">{tt.tenant.name}</Badge>
+          ))}
+        </div>
+      ),
     },
     {
       key: 'specialties',
@@ -200,7 +222,7 @@ export default function AdminTecnicosPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Gestión de Técnicos</h1>
-          <p className="text-slate-500 mt-1">Administra los técnicos de los centros</p>
+          <p className="text-slate-500 mt-1">Administra los técnicos y asignación a centros</p>
         </div>
         <Button onClick={() => { resetForm(); setSelectedTech(null); setShowModal(true) }}>
           <Plus className="w-4 h-4" />
@@ -234,7 +256,7 @@ export default function AdminTecnicosPage() {
 
       {/* Modal Crear/Editar */}
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setSelectedTech(null); resetForm() }} 
-        title={selectedTech ? 'Editar Técnico' : 'Nuevo Técnico'} size="md">
+        title={selectedTech ? 'Editar Técnico' : 'Nuevo Técnico'} size="lg">
         <div className="space-y-4">
           <Input
             label="DNI"
@@ -276,19 +298,24 @@ export default function AdminTecnicosPage() {
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
           />
+          
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Centro</label>
-            <select
-              value={formData.tenantId}
-              onChange={(e) => setFormData({ ...formData, tenantId: e.target.value })}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-            >
-              <option value="">Seleccionar centro...</option>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Centros asignados</label>
+            <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto">
               {tenants.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+                <label key={t.id} className="flex items-center gap-2 p-2 border rounded hover:bg-slate-50">
+                  <input
+                    type="checkbox"
+                    checked={selectedTenantIds.includes(t.id)}
+                    onChange={() => toggleTenant(t.id)}
+                    className="rounded"
+                  />
+                  <span className="text-sm">{t.name}</span>
+                </label>
               ))}
-            </select>
+            </div>
           </div>
+
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="ghost" onClick={() => { setShowModal(false); resetForm() }}>Cancelar</Button>
             <Button onClick={selectedTech ? handleUpdate : handleCreate} loading={saving}>
