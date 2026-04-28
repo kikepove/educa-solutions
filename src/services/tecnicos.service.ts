@@ -59,14 +59,25 @@ export async function createTechnician(tenantId: string, data: {
 
 export async function getTechnicians(tenantId: string) {
   return prisma.technician.findMany({
-    where: { tenantId, deletedAt: null },
+    where: {
+      deletedAt: null,
+      technicianTenants: {
+        some: { tenantId },
+      },
+    },
     orderBy: { name: 'asc' },
   })
 }
 
 export async function getTechnicianById(technicianId: string, tenantId: string) {
   return prisma.technician.findFirst({
-    where: { id: technicianId, tenantId },
+    where: {
+      id: technicianId,
+      deletedAt: null,
+      technicianTenants: {
+        some: { tenantId },
+      },
+    },
   })
 }
 
@@ -83,7 +94,13 @@ export async function updateTechnician(
   }>
 ) {
   const technician = await prisma.technician.findFirst({
-    where: { id: technicianId, tenantId },
+    where: {
+      id: technicianId,
+      deletedAt: null,
+      technicianTenants: {
+        some: { tenantId },
+      },
+    },
   })
 
   if (!technician) {
@@ -97,8 +114,22 @@ export async function updateTechnician(
 }
 
 export async function deleteTechnician(technicianId: string, tenantId: string) {
+  const technician = await prisma.technician.findFirst({
+    where: {
+      id: technicianId,
+      deletedAt: null,
+      technicianTenants: {
+        some: { tenantId },
+      },
+    },
+  })
+
+  if (!technician) {
+    throw new Error('Técnico no encontrado')
+  }
+
   return prisma.technician.update({
-    where: { id: technicianId, tenantId },
+    where: { id: technicianId },
     data: { deletedAt: new Date() },
   })
 }
@@ -107,6 +138,31 @@ export async function getAllTechnicians() {
   return prisma.technician.findMany({
     where: { deletedAt: null },
     orderBy: { name: 'asc' },
-    include: { tenant: { select: { id: true, name: true } } },
+    include: {
+      technicianTenants: {
+        include: { tenant: { select: { id: true, name: true } } },
+      },
+    },
+  })
+}
+
+export async function assignTechnicianToTenant(technicianId: string, tenantId: string) {
+  // Verificar si ya existe la asignación
+  const existing = await prisma.technicianTenant.findFirst({
+    where: { technicianId, tenantId },
+  })
+
+  if (existing) {
+    throw new Error('El técnico ya está asignado a este centro')
+  }
+
+  return prisma.technicianTenant.create({
+    data: { technicianId, tenantId },
+  })
+}
+
+export async function removeTechnicianFromTenant(technicianId: string, tenantId: string) {
+  return prisma.technicianTenant.deleteMany({
+    where: { technicianId, tenantId },
   })
 }
