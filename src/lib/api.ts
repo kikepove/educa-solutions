@@ -19,8 +19,14 @@ export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}):
   })
 
   if (!response.ok) {
-    const error = await response.text()
-    throw new Error(error || 'Error en la petición')
+    let errorMessage = 'Error en la petición'
+    try {
+      const errorData = await response.json()
+      errorMessage = errorData.error || errorData.message || JSON.stringify(errorData)
+    } catch {
+      errorMessage = await response.text() || `Error ${response.status}`
+    }
+    throw new Error(errorMessage)
   }
 
   const text = await response.text()

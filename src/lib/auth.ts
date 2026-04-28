@@ -39,6 +39,10 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Usuario desactivado')
         }
 
+        if (user.tenantId && user.tenant && !user.tenant.isActive) {
+          throw new Error('Centro desactivado')
+        }
+
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
 
         if (!isPasswordValid) {

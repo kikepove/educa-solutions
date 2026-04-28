@@ -88,8 +88,9 @@ export async function getTenantByCode(code: string) {
   })
 }
 
-export async function getAllTenants() {
+export async function getAllTenants(showAll: boolean = false) {
   return prisma.tenant.findMany({
+    where: showAll ? {} : { isActive: true },
     orderBy: { name: 'asc' },
     include: {
       _count: {

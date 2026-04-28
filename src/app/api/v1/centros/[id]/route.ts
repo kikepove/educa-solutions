@@ -77,17 +77,21 @@ export async function DELETE(
 ) {
   try {
     const user = await getCurrentUser()
+    console.log('[DEBUG DELETE centro] user:', user)
+    
     if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Forbidden - Solo admins pueden eliminar centros' }, { status: 403 })
     }
 
     if (!hasPermission(user.role, 'centros', 'delete')) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      return NextResponse.json({ error: 'Forbidden - No tienes permiso para eliminar centros' }, { status: 403 })
     }
 
+    console.log('[DEBUG DELETE centro] params.id:', params.id)
     await deleteTenant(params.id)
     return NextResponse.json({ message: 'Centro eliminado' })
   } catch (error: any) {
+    console.error('[DEBUG DELETE centro] error:', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

@@ -128,15 +128,28 @@ export async function updateTechnician(
 
   // Si se actualiza email, actualizar también el usuario asociado
   if (data.email) {
+    const userData: any = { 
+      email: data.email, 
+      isActive: data.isActive,
+    }
+    if (data.name !== undefined) userData.name = data.name
+    if (data.surname !== undefined) userData.surname = data.surname
+    if (data.phone !== undefined) userData.phone = data.phone
+    
     await prisma.user.updateMany({
       where: { dni: technician.dni, role: 'TECNICO' },
-      data: { 
-        email: data.email, 
-        name: data.name, 
-        surname: data.surname,
-        phone: data.phone,
-        isActive: data.isActive,
-      },
+      data: userData,
+    })
+  } else if (data.name || data.surname || data.phone || data.isActive !== undefined) {
+    const userData: any = {}
+    if (data.name !== undefined) userData.name = data.name
+    if (data.surname !== undefined) userData.surname = data.surname
+    if (data.phone !== undefined) userData.phone = data.phone
+    if (data.isActive !== undefined) userData.isActive = data.isActive
+    
+    await prisma.user.updateMany({
+      where: { dni: technician.dni, role: 'TECNICO' },
+      data: userData,
     })
   }
 

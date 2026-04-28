@@ -3,7 +3,7 @@ import { getCurrentUser } from '@/types'
 import { createTenant, getAllTenants, getTenantById, updateTenant, deleteTenant } from '@/services/centros.service'
 import { createTenantSchema } from '@/utils/validation'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const user = await getCurrentUser()
     if (!user) {
@@ -14,7 +14,10 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const tenants = await getAllTenants()
+    const { searchParams } = new URL(request.url)
+    const showAll = searchParams.get('showAll') === 'true'
+
+    const tenants = await getAllTenants(showAll)
     return NextResponse.json(tenants)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
