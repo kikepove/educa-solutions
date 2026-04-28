@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { Table, Column } from '@/components/ui/Table'
 import { fetchApi } from '@/lib/api'
+import { toast } from 'react-hot-toast'
 import type { Technician } from '@prisma/client'
 
 interface Tenant {
@@ -79,8 +80,9 @@ export default function AdminTecnicosPage() {
       setShowModal(false)
       resetForm()
       loadTechnicians()
-    } catch (error) {
-      console.error('Error creating technician:', error)
+      toast.success('Técnico creado correctamente')
+    } catch (error: any) {
+      toast.error(error.message || 'Error al crear técnico')
     } finally {
       setSaving(false)
     }
@@ -97,8 +99,9 @@ export default function AdminTecnicosPage() {
       setSelectedTech(null)
       resetForm()
       loadTechnicians()
-    } catch (error) {
-      console.error('Error updating technician:', error)
+      toast.success('Técnico actualizado correctamente')
+    } catch (error: any) {
+      toast.error(error.message || 'Error al actualizar técnico')
     } finally {
       setSaving(false)
     }
@@ -111,8 +114,9 @@ export default function AdminTecnicosPage() {
       setShowDeleteModal(false)
       setSelectedTech(null)
       loadTechnicians()
-    } catch (error) {
-      console.error('Error deleting technician:', error)
+      toast.success('Técnico eliminado correctamente')
+    } catch (error: any) {
+      toast.error(error.message || 'Error al eliminar técnico')
     } finally {
       setDeleting(false)
     }

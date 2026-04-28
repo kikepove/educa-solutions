@@ -26,6 +26,7 @@
     "papaparse": "^5.4.1",
     "qrcode": "^1.5.4",
     "react-day-picker": "^9.4.0",
+    "react-hot-toast": "^2.6.0",
     "stripe": "^17.4.0",
     "tailwind-merge": "^2.6.0",
     "zod": "^3.23.8"

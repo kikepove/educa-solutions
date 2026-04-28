@@ -43,6 +43,7 @@ export async function createTenant(data: CreateTenantInput) {
       password: hashedPassword,
       role: 'DIRECTOR',
       tenantId: tenant.id,
+      isActive: true,
     },
   })
 

@@ -1,6 +1,3 @@
-import { getToken } from 'next-auth/jwt'
-import { NextRequest } from 'next/server'
-
 const API_BASE = '/api/v1'
 
 interface FetchOptions extends RequestInit {
@@ -10,21 +7,15 @@ interface FetchOptions extends RequestInit {
 export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const { skipAuth = false, ...fetchOptions } = options
 
-  let token = null
-  if (!skipAuth) {
-    const req = new NextRequest('http://localhost' + API_BASE + endpoint)
-    token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET, raw: false })
-  }
-
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
-    ...(token && { Authorization: `Bearer ${token}` }),
     ...fetchOptions.headers,
   }
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...fetchOptions,
     headers,
+    credentials: 'include',
   })
 
   if (!response.ok) {

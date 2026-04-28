@@ -50,20 +50,13 @@ export async function POST(request: Request) {
     const body = await request.json()
     const data = createTechnicianSchema.parse(body)
     
-    // Admin can specify tenantId in body, others use their own tenantId
+    // Admin can specify tenantIds in body, others use their own tenantId
     const tenantId = user.role === 'ADMIN' && data.tenantIds?.[0] ? data.tenantIds[0] : user.tenantId
     if (!tenantId) {
       return NextResponse.json({ error: 'tenantId requerido' }, { status: 400 })
     }
 
-    const result = await createTechnician(tenantId, { ...data, password: data.password })
-    
-    // Asignar a múltiples centros si es admin y envió tenantIds
-    if (user.role === 'ADMIN' && data.tenantIds && data.tenantIds.length > 0) {
-      for (const tid of data.tenantIds) {
-        await assignTechnicianToTenant(result.technician.id, tid)
-      }
-    }
+    const result = await createTechnician(tenantId, { ...data, password: data.password }, data.tenantIds)
     
     return NextResponse.json(result, { status: 201 })
   } catch (error: any) {

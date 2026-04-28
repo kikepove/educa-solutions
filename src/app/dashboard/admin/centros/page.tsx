@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import { Table, Column } from '@/components/ui/Table'
 import { fetchApi } from '@/lib/api'
+import { toast } from 'react-hot-toast'
 
 interface Tenant {
   id: string
@@ -57,8 +58,9 @@ export default function CentrosPage() {
       setShowModal(false)
       setFormData({ name: '', slug: '', email: '', phone: '', password: '' })
       loadTenants()
-    } catch (error) {
-      console.error('Error creating tenant:', error)
+      toast.success('Centro creado correctamente')
+    } catch (error: any) {
+      toast.error(error.message || 'Error al crear centro')
     } finally {
       setSaving(false)
     }
@@ -72,8 +74,9 @@ export default function CentrosPage() {
       setSelectedTenant(null)
       setFormData({ name: '', slug: '', email: '', phone: '', password: '' })
       loadTenants()
-    } catch (error) {
-      console.error('Error updating tenant:', error)
+      toast.success('Centro actualizado correctamente')
+    } catch (error: any) {
+      toast.error(error.message || 'Error al actualizar centro')
     } finally {
       setSaving(false)
     }
@@ -86,8 +89,9 @@ export default function CentrosPage() {
       setShowDeleteModal(false)
       setSelectedTenant(null)
       loadTenants()
-    } catch (error) {
-      console.error('Error deleting tenant:', error)
+      toast.success('Centro eliminado correctamente')
+    } catch (error: any) {
+      toast.error(error.message || 'Error al eliminar centro')
     } finally {
       setDeleting(false)
     }

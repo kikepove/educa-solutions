@@ -9,7 +9,7 @@ export async function PUT(
 ) {
   try {
     const user = await getCurrentUser()
-    if (!user || !user.tenantId) {
+    if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
@@ -18,7 +18,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const technician = await updateTechnician(params.id, user.tenantId, body)
+    const technician = await updateTechnician(params.id, user.tenantId, user.role, body)
     return NextResponse.json(technician)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -31,7 +31,7 @@ export async function DELETE(
 ) {
   try {
     const user = await getCurrentUser()
-    if (!user || !user.tenantId) {
+    if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
@@ -39,7 +39,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    await deleteTechnician(params.id, user.tenantId)
+    await deleteTechnician(params.id, user.tenantId, user.role)
     return NextResponse.json({ message: 'Técnico eliminado' })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
