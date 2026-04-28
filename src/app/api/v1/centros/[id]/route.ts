@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/types'
 import { getTenantById, updateTenant, deleteTenant, regenerateTenantQR } from '@/services/centros.service'
 import { createTenantSchema } from '@/utils/validation'
+import bcrypt from 'bcryptjs'
+import prisma from '@/lib/db'
 
 export async function GET(
   request: Request,
@@ -44,6 +46,19 @@ export async function PUT(
 
     const body = await request.json()
     const data = createTenantSchema.partial().parse(body)
+
+    // Si se envía password, actualizar el usuario DIRECTOR asociado
+    if (data.password) {
+      const hashedPassword = await bcrypt.hash(data.password, 10)
+      const tenant = await prisma.tenant.findUnique({ where: { id: params.id } })
+      if (tenant?.email) {
+        await prisma.user.updateMany({
+          where: { email: tenant.email, role: 'DIRECTOR', tenantId: params.id },
+          data: { password: hashedPassword },
+        })
+      }
+      delete (data as any).password
+    }
 
     const tenant = await updateTenant(params.id, data)
     return NextResponse.json(tenant)

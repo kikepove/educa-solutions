@@ -13,10 +13,10 @@ const createTechnicianSchema = z.object({
   specialties: z.array(z.string()).optional(),
 })
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const user = await getCurrentUser()
-    if (!user || !user.tenantId) {
+    if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
@@ -24,7 +24,14 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const technicians = await getTechnicians(user.tenantId)
+    // Admin can optionally filter by tenantId query param
+    const url = new URL(request.url)
+    const tenantId = url.searchParams.get('tenantId') || user.tenantId
+    if (!tenantId) {
+      return NextResponse.json({ error: 'tenantId requerido' }, { status: 400 })
+    }
+
+    const technicians = await getTechnicians(tenantId)
     return NextResponse.json(technicians)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -34,7 +41,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const user = await getCurrentUser()
-    if (!user || !user.tenantId) {
+    if (!user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
@@ -44,8 +51,14 @@ export async function POST(request: Request) {
 
     const body = await request.json()
     const data = createTechnicianSchema.parse(body)
+    
+    // Admin can specify tenantId in body, others use their own tenantId
+    const tenantId = user.role === 'ADMIN' && body.tenantId ? body.tenantId : user.tenantId
+    if (!tenantId) {
+      return NextResponse.json({ error: 'tenantId requerido' }, { status: 400 })
+    }
 
-    const result = await createTechnician(user.tenantId, data)
+    const result = await createTechnician(tenantId, data)
     return NextResponse.json(result, { status: 201 })
   } catch (error: any) {
     if (error.name === 'ZodError') {

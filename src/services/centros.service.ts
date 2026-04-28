@@ -2,6 +2,7 @@ import prisma from '@/lib/db'
 import { createCustomer } from '@/lib/stripe'
 import { generateTenantQR } from '@/lib/qr'
 import type { CreateTenantInput } from '@/utils/validation'
+import bcrypt from 'bcryptjs'
 
 function generateTenantCode(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -14,6 +15,8 @@ export async function createTenant(data: CreateTenantInput) {
     code = generateTenantCode()
     codeExists = await prisma.tenant.findUnique({ where: { code } })
   }
+
+  const hashedPassword = await bcrypt.hash(data.password!, 10)
 
   const tenant = await prisma.tenant.create({
     data: {
@@ -30,6 +33,17 @@ export async function createTenant(data: CreateTenantInput) {
   await prisma.tenant.update({
     where: { id: tenant.id },
     data: { qrUrl: qrData.qrDataUrl },
+  })
+
+  // Crear usuario DIRECTOR asociado al centro
+  await prisma.user.create({
+    data: {
+      email: data.email!,
+      name: data.name,
+      password: hashedPassword,
+      role: 'DIRECTOR',
+      tenantId: tenant.id,
+    },
   })
 
   return {
