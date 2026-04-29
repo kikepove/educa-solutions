@@ -5,28 +5,23 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
+    const activate = searchParams.get('activate')
     
     if (!email) {
       return NextResponse.json({ error: 'Email required' }, { status: 400 })
     }
     
-    const user = await prisma.user.findUnique({
+    const isActive = activate === 'true'
+    
+    const user = await prisma.user.update({
       where: { email },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        isActive: true,
-        tenantId: true,
-      },
+      data: { isActive },
     })
     
-    if (!user) {
-      return NextResponse.json({ user: null, message: 'User not found' })
-    }
-    
-    return NextResponse.json({ user })
+    return NextResponse.json({ 
+      message: `User ${isActive ? 'activated' : 'deactivated'}`,
+      user: { id: user.id, email: user.email, isActive: user.isActive }
+    })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
