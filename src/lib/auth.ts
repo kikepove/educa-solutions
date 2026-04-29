@@ -14,16 +14,17 @@ export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'credentials',
+      type: 'credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
+        email: { label: 'Email', type: 'email', placeholder: 'email@example.com' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         console.log('[AUTH] Attempting login for:', credentials?.email)
         
         if (!credentials?.email || !credentials?.password) {
           console.log('[AUTH] Missing credentials')
-          throw new Error('Credenciales requeridas')
+          return null
         }
 
         const user = await prisma.user.findUnique({
@@ -35,24 +36,24 @@ export const authOptions: NextAuthOptions = {
 
         if (!user || !user.password) {
           console.log('[AUTH] User not found or no password')
-          throw new Error('Usuario no encontrado')
+          return null
         }
 
         if (!user.isActive) {
           console.log('[AUTH] User is inactive')
-          throw new Error('Usuario desactivado')
+          return null
         }
 
         if (user.tenantId && user.tenant && !user.tenant.isActive) {
           console.log('[AUTH] Tenant is inactive')
-          throw new Error('Centro desactivado')
+          return null
         }
 
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
 
         if (!isPasswordValid) {
           console.log('[AUTH] Invalid password')
-          throw new Error('Contraseña incorrecta')
+          return null
         }
 
         console.log('[AUTH] Login successful for:', user.email, 'role:', user.role)
