@@ -54,7 +54,26 @@ export async function GET() {
       include: { tenant: true },
     })
     
-    const passwordWorksAfterReset = await bcrypt.compare(password, verifyUser!.password!)
+    if (!verifyUser) {
+      return NextResponse.json({ error: 'Usuario no encontrado después del reset' }, { status: 500 })
+    }
+    
+    const passwordWorksAfterReset = await bcrypt.compare(password, verifyUser.password!)
+    
+    return NextResponse.json({ 
+      success: true,
+      message: 'Password reset done. Try test123',
+      checks,
+      passwordWorksBeforeReset: passwordWorks,
+      passwordWorksAfterReset,
+      nextAuthSimulation: {
+        wouldFail: !verifyUser.isActive || !passwordWorksAfterReset || (verifyUser.tenantId && verifyUser.tenant && !verifyUser.tenant.isActive),
+        reason: !verifyUser.isActive ? 'Usuario desactivado' : 
+                !passwordWorksAfterReset ? 'Contraseña incorrecta' :
+                (verifyUser.tenantId && verifyUser.tenant && !verifyUser.tenant.isActive) ? 'Centro desactivado' :
+                'OK - debería funcionar'
+      }
+    })
     
     return NextResponse.json({ 
       success: true,
