@@ -30,6 +30,7 @@ export default function CentroDashboardPage() {
   const menuItems = [
     { label: 'Aulas', href: '/dashboard/centro/aulas', icon: DoorOpen },
     { label: 'Profesores', href: '/dashboard/centro/profesores', icon: Users },
+    { label: 'Usuarios TIC', href: '/dashboard/centro/usuarios', icon: Users },
     { label: 'Inventario', href: '/dashboard/centro/inventario', icon: Package },
     { label: 'Horarios', href: '/dashboard/centro/horarios', icon: Clock },
     { label: 'Reservas', href: '/dashboard/centro/reservas', icon: Calendar },
