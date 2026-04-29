@@ -58,9 +58,7 @@ export default function IncidenciasPage() {
       fetchApi(`/incidencias/${data.id}`, { method: 'PUT', body: JSON.stringify(data) })
   )
 
-  useEffect(() => { loadIncidencias() }, [])
-
-  const loadIncidencias = async () => {
+  const loadIncidencias = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -74,7 +72,9 @@ export default function IncidenciasPage() {
     } catch (error) {
       console.error('Error:', error)
     } finally { setLoading(false) }
-  }
+  }, [search, filterStatus, filterPriority])
+
+  useEffect(() => { loadIncidencias() }, [loadIncidencias])
 
   const handleCreate = async () => {
     try {
