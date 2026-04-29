@@ -48,7 +48,7 @@ enum ReservationStatus {
 enum ScheduleDay {
   LUNES
   MARTES
-  MIERCOLES
+  MERCOLES
   JUEVES
   VIERNES
   SABADO

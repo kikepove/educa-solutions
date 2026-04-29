@@ -15,7 +15,7 @@ import { fetchApi } from '@/lib/api'
 import { useApp } from '@/contexts/AppContext'
 import type { Schedule, GuardDuty, Reservation, Incident } from '@/types/frontend'
 
-const days = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES']
+const days = ['LUNES', 'MARTES', 'MERCOLES', 'JUEVES', 'VIERNES']
 
 export default function ProfesorDashboardPage() {
   const { data: session } = useSession()

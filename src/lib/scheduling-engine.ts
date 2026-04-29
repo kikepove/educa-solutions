@@ -17,7 +17,7 @@ type SlotKey = string // `${day}-${hour}-${classroomId}`
 
 export class SchedulingEngine {
   private tenantId: string
-  private days: ScheduleDay[] = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES']
+  private days: ScheduleDay[] = ['LUNES', 'MARTES', 'MERCOLES', 'JUEVES', 'VIERNES']
   private hours: ScheduleHour[] = [1, 2, 3, 4, 5, 6, 7]
   
   // Estado del horario

@@ -103,7 +103,7 @@ export const createReservationSchema = z.object({
 })
 
 export const createScheduleSchema = z.object({
-  day: z.enum(['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO']),
+  day: z.enum(['LUNES', 'MARTES', 'MERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO']),
   startTime: z.string().min(1, 'La hora de inicio es requerida'),
   endTime: z.string().min(1, 'La hora de fin es requerida'),
   weekNumber: z.number().optional(),

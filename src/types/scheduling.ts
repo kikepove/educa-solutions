@@ -1,6 +1,6 @@
 // Tipos para el sistema de generación de horarios
 
-export type ScheduleDay = 'LUNES' | 'MARTES' | 'MIERCOLES' | 'JUEVES' | 'VIERNES'
+export type ScheduleDay = 'LUNES' | 'MARTES' | 'MERCOLES' | 'JUEVES' | 'VIERNES'
 export type ScheduleHour = 1 | 2 | 3 | 4 | 5 | 6 | 7
 
 export interface ScheduleSlot {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { Clock, Calendar, CheckCircle, AlertTriangle } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
@@ -11,7 +11,7 @@ import type { Schedule, Classroom, Subject } from '@/types/frontend'
 const dayLabels: Record<string, string> = {
   'LUNES': 'Lunes',
   'MARTES': 'Martes',
-  'MIERCOLES': 'Miércoles',
+  'MERCOLES': 'Miércoles',
   'JUEVES': 'Jueves',
   'VIERNES': 'Viernes',
 }

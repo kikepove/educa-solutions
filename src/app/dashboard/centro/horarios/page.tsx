@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Clock, Plus, Search, Filter, Calendar, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -16,7 +16,7 @@ import type { Schedule, Classroom, Teacher, Subject } from '@/types/frontend'
 const dayLabels: Record<string, string> = {
   'LUNES': 'Lunes',
   'MARTES': 'Martes',
-  'MIERCOLES': 'Miércoles',
+  'MERCOLES': 'Miércoles',
   'JUEVES': 'Jueves',
   'VIERNES': 'Viernes',
   'SABADO': 'Sábado',
@@ -48,14 +48,7 @@ export default function CentroHorariosPage() {
     notes: '',
   })
 
-  useEffect(() => {
-    loadSchedules()
-    loadClassrooms()
-    loadTeachers()
-    loadSubjects()
-  }, [])
-
-  const loadSchedules = async () => {
+  const loadSchedules = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -71,34 +64,41 @@ export default function CentroHorariosPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filterDay, filterClassroom, filterTeacher])
 
-  const loadClassrooms = async () => {
+  const loadClassrooms = useCallback(async () => {
     try {
       const data = await fetchApi<Classroom[]>('/aulas')
       setClassrooms(data)
     } catch (error) {
       console.error('Error loading classrooms:', error)
     }
-  }
+  }, [])
 
-  const loadTeachers = async () => {
+  const loadTeachers = useCallback(async () => {
     try {
       const data = await fetchApi<Teacher[]>('/profesores')
       setTeachers(data)
     } catch (error) {
       console.error('Error loading teachers:', error)
     }
-  }
+  }, [])
 
-  const loadSubjects = async () => {
+  const loadSubjects = useCallback(async () => {
     try {
       const data = await fetchApi<Subject[]>('/asignaturas')
       setSubjects(data)
     } catch (error) {
       console.error('Error loading subjects:', error)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    loadSchedules()
+    loadClassrooms()
+    loadTeachers()
+    loadSubjects()
+  }, [loadSchedules, loadClassrooms, loadTeachers, loadSubjects])
 
   const handleGenerate = async () => {
     setGenerating(true)
@@ -203,7 +203,7 @@ export default function CentroHorariosPage() {
     { label: 'Total', value: schedules.length, icon: Calendar, color: 'bg-slate-500' },
     { label: 'Lunes', value: schedules.filter(s => s.day === 'LUNES').length, icon: Clock, color: 'bg-blue-500' },
     { label: 'Martes', value: schedules.filter(s => s.day === 'MARTES').length, icon: Clock, color: 'bg-green-500' },
-    { label: 'Miércoles', value: schedules.filter(s => s.day === 'MIERCOLES').length, icon: Clock, color: 'bg-yellow-500' },
+    { label: 'Miércoles', value: schedules.filter(s => s.day === 'MERCOLES').length, icon: Clock, color: 'bg-yellow-500' },
   ]
 
   return (
@@ -255,7 +255,7 @@ export default function CentroHorariosPage() {
               { value: '', label: 'Todos los días' },
               { value: 'LUNES', label: 'Lunes' },
               { value: 'MARTES', label: 'Martes' },
-              { value: 'MIERCOLES', label: 'Miércoles' },
+              { value: 'MERCOLES', label: 'Miércoles' },
               { value: 'JUEVES', label: 'Jueves' },
               { value: 'VIERNES', label: 'Viernes' },
             ]}
@@ -309,7 +309,7 @@ export default function CentroHorariosPage() {
               options={[
                 { value: 'LUNES', label: 'Lunes' },
                 { value: 'MARTES', label: 'Martes' },
-                { value: 'MIERCOLES', label: 'Miércoles' },
+                { value: 'MERCOLES', label: 'Miércoles' },
                 { value: 'JUEVES', label: 'Jueves' },
                 { value: 'VIERNES', label: 'Viernes' },
               ]}
