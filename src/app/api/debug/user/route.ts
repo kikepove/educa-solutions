@@ -74,21 +74,6 @@ export async function GET() {
                 'OK - debería funcionar'
       }
     })
-    
-    return NextResponse.json({ 
-      success: true,
-      message: 'Password reset done. Try test123',
-      checks,
-      passwordWorksBeforeReset: passwordWorks,
-      passwordWorksAfterReset,
-      nextAuthSimulation: {
-        wouldFail: !verifyUser.isActive || !passwordWorksAfterReset || (verifyUser.tenantId && verifyUser.tenant && !verifyUser.tenant.isActive),
-        reason: !verifyUser.isActive ? 'Usuario desactivado' : 
-                !passwordWorksAfterReset ? 'Contraseña incorrecta' :
-                (verifyUser.tenantId && verifyUser.tenant && !verifyUser.tenant.isActive) ? 'Centro desactivado' :
-                'OK - debería funcionar'
-      }
-    })
   } catch (error: any) {
     return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 })
   }
