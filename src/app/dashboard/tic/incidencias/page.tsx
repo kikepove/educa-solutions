@@ -52,13 +52,7 @@ export default function TICIncidenciasPage() {
     technicianId: '',
   })
 
-  useEffect(() => {
-    loadIncidencias()
-    loadClassrooms()
-    loadTeachers()
-  }, [])
-
-  const loadIncidencias = async () => {
+  const loadIncidencias = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -74,7 +68,13 @@ export default function TICIncidenciasPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [search, filterStatus, filterPriority])
+
+  useEffect(() => {
+    loadIncidencias()
+    loadClassrooms()
+    loadTeachers()
+  }, [loadIncidencias])
 
   const loadClassrooms = async () => {
     try {
@@ -248,7 +248,7 @@ export default function TICIncidenciasPage() {
           </div>
           <Select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(value) => setFilterStatus(value)}
             options={[
               { value: '', label: 'Todos los estados' },
               { value: 'ABIERTA', label: 'Abierta' },
@@ -260,7 +260,7 @@ export default function TICIncidenciasPage() {
           />
           <Select
             value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
+            onChange={(value) => setFilterPriority(value)}
             options={[
               { value: '', label: 'Todas las prioridades' },
               { value: 'CRITICA', label: 'Crítica' },
@@ -305,7 +305,7 @@ export default function TICIncidenciasPage() {
           <Select
             label="Estado"
             value={formData.status}
-            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, status: value })}
             options={[
               { value: 'ABIERTA', label: 'Abierta' },
               { value: 'EN_PROCESO', label: 'En proceso' },
@@ -317,7 +317,7 @@ export default function TICIncidenciasPage() {
           <Select
             label="Asignar a técnico (opcional)"
             value={formData.technicianId}
-            onChange={(e) => setFormData({ ...formData, technicianId: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, technicianId: value })}
             options={[
               { value: '', label: 'Sin asignar' },
               ...teachers

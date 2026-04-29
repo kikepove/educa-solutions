@@ -34,12 +34,7 @@ export default function ProfesorReservasPage() {
 
   const userId = (session?.user as any)?.id
 
-  useEffect(() => {
-    loadReservas()
-    loadClassrooms()
-  }, [])
-
-  const loadReservas = async () => {
+  const loadReservas = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -53,7 +48,12 @@ export default function ProfesorReservasPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filterStatus])
+
+  useEffect(() => {
+    loadReservas()
+    loadClassrooms()
+  }, [loadReservas])
 
   const loadClassrooms = async () => {
     try {
@@ -218,7 +218,7 @@ export default function ProfesorReservasPage() {
           </div>
           <Select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(value) => setFilterStatus(value)}
             options={[
               { value: '', label: 'Todos los estados' },
               { value: 'PENDIENTE', label: 'Pendiente' },
@@ -268,7 +268,7 @@ export default function ProfesorReservasPage() {
           <Select
             label="Aula"
             value={formData.classroomId}
-            onChange={(e) => setFormData({ ...formData, classroomId: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, classroomId: value })}
             options={[
               { value: '', label: 'Selecciona un aula' },
               ...classrooms.map((c) => ({ value: c.id, label: c.name })),

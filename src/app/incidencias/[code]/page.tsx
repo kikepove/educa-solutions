@@ -161,7 +161,7 @@ export default function PublicIncidenciasPage() {
               <Select
                 label="Prioridad"
                 value={formData.priority}
-                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, priority: value })}
                 options={[
                   { value: 'BAJA', label: 'Baja' },
                   { value: 'MEDIA', label: 'Media' },
@@ -172,7 +172,7 @@ export default function PublicIncidenciasPage() {
               <Select
                 label="Categoría"
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                onChange={(value) => setFormData({ ...formData, category: value })}
                 options={[
                   { value: 'HARDWARE', label: 'Hardware' },
                   { value: 'SOFTWARE', label: 'Software' },

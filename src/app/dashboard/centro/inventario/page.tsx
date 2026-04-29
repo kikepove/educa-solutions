@@ -36,12 +36,7 @@ export default function CentroInventarioPage() {
     classroomId: '',
   })
 
-  useEffect(() => {
-    loadItems()
-    loadClassrooms()
-  }, [])
-
-  const loadItems = async () => {
+  const loadItems = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -57,7 +52,12 @@ export default function CentroInventarioPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [search, filterCategory, filterStatus])
+
+  useEffect(() => {
+    loadItems()
+    loadClassrooms()
+  }, [loadItems])
 
   const loadClassrooms = async () => {
     try {

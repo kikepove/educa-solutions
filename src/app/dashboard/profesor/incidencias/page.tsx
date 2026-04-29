@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { Ticket, Plus, Search, Filter, AlertTriangle, CheckCircle, Clock, XCircle, Eye, Pencil } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
@@ -56,12 +56,7 @@ export default function ProfesorIncidenciasPage() {
     classroomId: '',
   })
 
-  useEffect(() => {
-    loadIncidencias()
-    loadClassrooms()
-  }, [])
-
-  const loadIncidencias = async () => {
+  const loadIncidencias = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
@@ -77,7 +72,12 @@ export default function ProfesorIncidenciasPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [search, filterStatus, filterPriority])
+
+  useEffect(() => {
+    loadIncidencias()
+    loadClassrooms()
+  }, [loadIncidencias])
 
   const loadClassrooms = async () => {
     try {
@@ -264,7 +264,7 @@ export default function ProfesorIncidenciasPage() {
           </div>
           <Select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(value) => setFilterStatus(value)}
             options={[
               { value: '', label: 'Todos los estados' },
               { value: 'ABIERTA', label: 'Abierta' },
@@ -276,7 +276,7 @@ export default function ProfesorIncidenciasPage() {
           />
           <Select
             value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
+            onChange={(value) => setFilterPriority(value)}
             options={[
               { value: '', label: 'Todas las prioridades' },
               { value: 'CRITICA', label: 'Crítica' },
@@ -331,7 +331,7 @@ export default function ProfesorIncidenciasPage() {
             <Select
               label="Prioridad"
               value={formData.priority}
-              onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, priority: value })}
               options={[
                 { value: 'BAJA', label: 'Baja' },
                 { value: 'MEDIA', label: 'Media' },
@@ -342,7 +342,7 @@ export default function ProfesorIncidenciasPage() {
             <Select
               label="Categoría"
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, category: value })}
               options={[
                 { value: 'HARDWARE', label: 'Hardware' },
                 { value: 'SOFTWARE', label: 'Software' },
@@ -359,11 +359,11 @@ export default function ProfesorIncidenciasPage() {
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
             />
-            <Select
-              label="Aula (opcional)"
-              value={formData.classroomId}
-              onChange={(e) => setFormData({ ...formData, classroomId: e.target.value })}
-              options={[
+          <Select
+            label="Aula (opcional)"
+            value={formData.classroomId}
+            onChange={(value) => setFormData({ ...formData, classroomId: value })}
+            options={[
                 { value: '', label: 'Ninguna' },
                 ...classrooms.map((c) => ({ value: c.id, label: c.name })),
               ]}

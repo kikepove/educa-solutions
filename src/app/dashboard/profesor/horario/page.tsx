@@ -28,13 +28,7 @@ export default function ProfesorHorarioPage() {
 
   const userId = (session?.user as any)?.id
 
-  useEffect(() => {
-    if (userId) {
-      loadSchedule()
-    }
-  }, [userId, selectedWeek])
-
-  const loadSchedule = async () => {
+  const loadSchedule = useCallback(async () => {
     setLoading(true)
     try {
       const data = await fetchApi<Schedule[]>(`/horarios?teacherSchedule=true&weekNumber=${selectedWeek}`)
@@ -44,7 +38,13 @@ export default function ProfesorHorarioPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedWeek])
+
+  useEffect(() => {
+    if (userId) {
+      loadSchedule()
+    }
+  }, [userId, loadSchedule])
 
   // Agrupar horarios por día
   const schedulesByDay = (day: string) => {

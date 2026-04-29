@@ -52,6 +52,7 @@ export interface Teacher {
   phone?: string
   department?: string
   isActive: boolean
+  role?: UserRole
 }
 
 export interface Technician {

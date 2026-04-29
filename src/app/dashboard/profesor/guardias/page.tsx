@@ -32,11 +32,7 @@ export default function ProfesorGuardiasPage() {
 
   const userId = (session?.user as any)?.id
 
-  useEffect(() => {
-    loadGuardias()
-  }, [activeTab])
-
-  const loadGuardias = async () => {
+  const loadGuardias = useCallback(async () => {
     setLoading(true)
     try {
       let params = new URLSearchParams()
@@ -53,7 +49,11 @@ export default function ProfesorGuardiasPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [activeTab, userId])
+
+  useEffect(() => {
+    loadGuardias()
+  }, [loadGuardias])
 
   const handleSignUp = async (guardiaId: string) => {
     if (!confirm('¿Quieres inscribirte en esta guardia?')) return
