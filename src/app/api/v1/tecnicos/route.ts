@@ -53,7 +53,6 @@ export async function POST(request: Request) {
     
     // Validación más flexible
     const missing: string[] = []
-    if (!body.dni || body.dni.length < 1) missing.push('DNI')
     if (!body.name || body.name.length < 2) missing.push('nombre')
     if (!body.surname || body.surname.length < 2) missing.push('apellidos')
     if (!body.email || !body.email.includes('@')) missing.push('email')
