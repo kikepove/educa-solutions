@@ -134,6 +134,7 @@ export async function updateTechnician(
     phone: string
     specialties: string[]
     isActive: boolean
+    password?: string
   }>
 ) {
   console.log('[updateTechnician] Starting:', { technicianId, userRole, data })
@@ -162,10 +163,13 @@ export async function updateTechnician(
 
   console.log('[updateTechnician] Found:', technician.id, technician.dni)
 
-  // Actualizar técnico
+  // Separar password del resto de datos (Technician no tiene campo password)
+  const { password, ...technicianData } = data
+  
+  // Actualizar técnico (sin password)
   const updated = await prisma.technician.update({
     where: { id: technicianId },
-    data,
+    data: technicianData,
   })
   console.log('[updateTechnician] Updated technician')
 
@@ -176,6 +180,13 @@ export async function updateTechnician(
   if (data.surname !== undefined) userData.surname = data.surname
   if (data.phone !== undefined) userData.phone = data.phone
   if (data.isActive !== undefined) userData.isActive = data.isActive
+  
+  // Si se proporciona password, hashearla y actualizar en User
+  if (password && password.trim() !== '') {
+    const hashedPassword = await bcrypt.hash(password, 12)
+    userData.password = hashedPassword
+    console.log('[updateTechnician] Password will be updated')
+  }
   
   if (Object.keys(userData).length > 0) {
     await prisma.user.updateMany({
