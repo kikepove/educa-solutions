@@ -37,7 +37,7 @@ export default function CentrosPage() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [toggling, setToggling] = useState(false)
-  const [formData, setFormData] = useState({ name: '', slug: '', email: '', phone: '', password: '' })
+  const [formData, setFormData] = useState({ name: '', slug: '', email: '', phone: '', password: '', subscriptionType: 'TRIAL' })
 
   const loadTenants = async () => {
     setLoading(true)
@@ -58,7 +58,7 @@ export default function CentrosPage() {
     try {
       await fetchApi<Tenant>('/centros', { method: 'POST', body: JSON.stringify(formData) })
       setShowModal(false)
-      setFormData({ name: '', slug: '', email: '', phone: '', password: '' })
+      setFormData({ name: '', slug: '', email: '', phone: '', password: '', subscriptionType: 'TRIAL' })
       loadTenants()
       toast.success('Centro creado correctamente')
     } catch (error: any) {
@@ -74,7 +74,7 @@ export default function CentrosPage() {
       await fetchApi<Tenant>(`/centros/${selectedTenant?.id}`, { method: 'PUT', body: JSON.stringify(formData) })
       setShowModal(false)
       setSelectedTenant(null)
-      setFormData({ name: '', slug: '', email: '', phone: '', password: '' })
+      setFormData({ name: '', slug: '', email: '', phone: '', password: '', subscriptionType: 'TRIAL' })
       loadTenants()
       toast.success('Centro actualizado correctamente')
     } catch (error: any) {
@@ -134,7 +134,14 @@ export default function CentrosPage() {
 
   const openEditModal = (tenant: Tenant) => {
     setSelectedTenant(tenant)
-    setFormData({ name: tenant.name, slug: tenant.slug, email: tenant.email || '', phone: tenant.phone || '', password: '' })
+    setFormData({ 
+      name: tenant.name, 
+      slug: tenant.slug, 
+      email: tenant.email || '', 
+      phone: tenant.phone || '', 
+      password: '',
+      subscriptionType: tenant.subscriptionStatus === 'ACTIVA' ? 'COMPLETA' : 'TRIAL'
+    })
     setShowModal(true)
   }
 
@@ -236,7 +243,7 @@ export default function CentrosPage() {
           <h1 className="text-2xl font-bold text-slate-900">Centros educativos</h1>
           <p className="text-slate-500 mt-1">Gestiona los centros registrados en la plataforma</p>
         </div>
-        <Button onClick={() => { setSelectedTenant(null); setFormData({ name: '', slug: '', email: '', phone: '', password: '' }); setShowModal(true) }}>
+        <Button onClick={() => { setSelectedTenant(null); setFormData({ name: '', slug: '', email: '', phone: '', password: '', subscriptionType: 'TRIAL' }); setShowModal(true) }}>
           <Plus className="w-4 h-4" />
           Nuevo centro
         </Button>
@@ -275,7 +282,7 @@ export default function CentrosPage() {
         />
       </Card>
 
-      <Modal isOpen={showModal} onClose={() => { setShowModal(false); setSelectedTenant(null); setFormData({ name: '', slug: '', email: '', phone: '', password: '' }) }} title={selectedTenant ? 'Editar Centro' : 'Nuevo Centro'} size="md">
+      <Modal isOpen={showModal} onClose={() => { setShowModal(false); setSelectedTenant(null); setFormData({ name: '', slug: '', email: '', phone: '', password: '', subscriptionType: 'TRIAL' }) }} title={selectedTenant ? 'Editar Centro' : 'Nuevo Centro'} size="md">
         <div className="space-y-4">
           <Input
             label="Nombre del centro"
@@ -309,8 +316,35 @@ export default function CentrosPage() {
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
           />
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Tipo de suscripción</label>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="subscriptionType"
+                  value="TRIAL"
+                  checked={formData.subscriptionType === 'TRIAL'}
+                  onChange={(e) => setFormData({ ...formData, subscriptionType: e.target.value })}
+                  className="text-blue-600"
+                />
+                <span className="text-sm">Trial (7 días)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="subscriptionType"
+                  value="COMPLETA"
+                  checked={formData.subscriptionType === 'COMPLETA'}
+                  onChange={(e) => setFormData({ ...formData, subscriptionType: e.target.value })}
+                  className="text-blue-600"
+                />
+                <span className="text-sm">Versión Completa</span>
+              </label>
+            </div>
+          </div>
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="ghost" onClick={() => { setShowModal(false); setSelectedTenant(null); setFormData({ name: '', slug: '', email: '', phone: '', password: '' }) }}>Cancelar</Button>
+            <Button variant="ghost" onClick={() => { setShowModal(false); setSelectedTenant(null); setFormData({ name: '', slug: '', email: '', phone: '', password: '', subscriptionType: 'TRIAL' }) }}>Cancelar</Button>
             <Button onClick={selectedTenant ? handleUpdate : handleCreate} loading={saving} disabled={!formData.name || !formData.slug}>
               {selectedTenant ? 'Actualizar' : 'Crear centro'}
             </Button>

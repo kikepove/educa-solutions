@@ -12,6 +12,7 @@ export const createTenantSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email('Email inválido').optional(),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+  subscriptionType: z.enum(['TRIAL', 'COMPLETA']).optional(),
 })
 
 export const createUserSchema = z.object({

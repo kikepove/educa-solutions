@@ -8,7 +8,7 @@ function generateTenantCode(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase()
 }
 
-export async function createTenant(data: CreateTenantInput) {
+export async function createTenant(data: CreateTenantInput & { subscriptionType?: string }) {
   let code = generateTenantCode()
   let codeExists = await prisma.tenant.findUnique({ where: { code } })
   while (codeExists) {
@@ -18,6 +18,10 @@ export async function createTenant(data: CreateTenantInput) {
 
   const hashedPassword = await bcrypt.hash(data.password!, 10)
 
+  // Determinar estado de suscripción
+  const isComplete = data.subscriptionType === 'COMPLETA'
+  const trialEndsAt = isComplete ? null : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 días
+
   const tenant = await prisma.tenant.create({
     data: {
       name: data.name,
@@ -26,6 +30,9 @@ export async function createTenant(data: CreateTenantInput) {
       address: data.address,
       phone: data.phone,
       email: data.email,
+      isActive: true,
+      subscriptionStatus: isComplete ? 'ACTIVA' : 'TRIALING',
+      trialEndsAt,
     },
   })
 
