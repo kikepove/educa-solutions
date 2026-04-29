@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { Plus, Search, Pencil, Trash2, RefreshCw, UserCog } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
