@@ -303,8 +303,8 @@ model Incident {
   technicianId String?
   technician   Technician? @relation("TechnicianIncidents", fields: [technicianId], references: [id], onDelete: SetNull)
 
-  createdById String
-  createdBy   User   @relation("CreatedByIncidents", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+  createdBy   User?   @relation("CreatedByIncidents", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([status])
