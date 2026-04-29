@@ -1,9 +1,11 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import { PrismaAdapter } from '@auth/prisma-adapter'
 import bcrypt from 'bcryptjs'
-import prisma from './db'
+import prisma from '@/lib/db'
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60,
@@ -14,17 +16,13 @@ export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'credentials',
-      type: 'credentials',
       credentials: {
-        email: { label: 'Email', type: 'email', placeholder: 'email@example.com' },
+        email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials, req) {
-        console.log('[AUTH] Attempting login for:', credentials?.email)
-        
+      async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          console.log('[AUTH] Missing credentials')
-          return null
+          throw new Error('Credenciales requeridas')
         }
 
         const user = await prisma.user.findUnique({
@@ -32,31 +30,23 @@ export const authOptions: NextAuthOptions = {
           include: { tenant: true },
         })
 
-        console.log('[AUTH] Found user:', user?.id, 'isActive:', user?.isActive, 'role:', user?.role)
-
         if (!user || !user.password) {
-          console.log('[AUTH] User not found or no password')
-          return null
+          throw new Error('Usuario no encontrado')
         }
 
         if (!user.isActive) {
-          console.log('[AUTH] User is inactive')
-          return null
+          throw new Error('Usuario desactivado')
         }
 
         if (user.tenantId && user.tenant && !user.tenant.isActive) {
-          console.log('[AUTH] Tenant is inactive')
-          return null
+          throw new Error('Centro desactivado')
         }
 
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
 
         if (!isPasswordValid) {
-          console.log('[AUTH] Invalid password')
-          return null
+          throw new Error('Contraseña incorrecta')
         }
-
-        console.log('[AUTH] Login successful for:', user.email, 'role:', user.role)
 
         await prisma.user.update({
           where: { id: user.id },

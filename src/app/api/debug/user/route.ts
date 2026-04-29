@@ -4,24 +4,31 @@ import bcrypt from 'bcryptjs'
 
 export async function POST(request: Request) {
   try {
-    // 1. Activate all ADMIN users
-    await prisma.user.updateMany({
-      where: { role: 'ADMIN' },
-      data: { isActive: true },
-    })
+    const { email, password } = await request.json()
     
-    // 2. Reset password for kike.poveda@gmail.com
-    const hashedPassword = await bcrypt.hash('1a2bkike', 12)
+    if (!email) {
+      return NextResponse.json({ error: 'Email required' }, { status: 400 })
+    }
+    
+    // Hash the password with bcrypt
+    const hashedPassword = await bcrypt.hash(password || 'admin123', 12)
+    
     const user = await prisma.user.update({
-      where: { email: 'kike.poveda@gmail.com' },
+      where: { email },
       data: { 
         password: hashedPassword,
         isActive: true,
       },
     })
     
+    // Also ensure all ADMIN users are active
+    await prisma.user.updateMany({
+      where: { role: 'ADMIN' },
+      data: { isActive: true },
+    })
+    
     return NextResponse.json({ 
-      message: 'Admin user fixed',
+      message: 'User fixed',
       user: { id: user.id, email: user.email, role: user.role, isActive: user.isActive }
     })
   } catch (error: any) {
