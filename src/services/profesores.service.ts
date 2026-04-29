@@ -3,30 +3,30 @@ import bcrypt from 'bcryptjs'
 import type { CreateUserInput } from '@/utils/validation'
 
 export async function createTeacher(tenantId: string, data: {
-  dni: string
   name: string
   surname: string
   email: string
   phone?: string
   department?: string
-  password?: string // Nueva: contraseña opcional
+  password?: string
 }) {
-  const existing = await prisma.teacher.findFirst({
-    where: { tenantId, dni: data.dni },
+  // Verificar si ya existe un profesor con ese email
+  const existingByEmail = await prisma.teacher.findFirst({
+    where: { tenantId, email: data.email },
   })
 
-  if (existing) {
-    throw new Error('Ya existe un profesor con ese DNI')
+  if (existingByEmail) {
+    throw new Error('Ya existe un profesor con ese email')
   }
 
   // Si no se proporciona contraseña, generar una temporal
   const password = data.password || Math.random().toString(36).slice(-8)
   const hashedPassword = await bcrypt.hash(password, 12)
 
+  // El code se genera automáticamente con @default(cuid()) en Prisma
   const [teacher, user] = await prisma.$transaction([
     prisma.teacher.create({
       data: {
-        dni: data.dni,
         name: data.name,
         surname: data.surname,
         email: data.email,
@@ -40,7 +40,6 @@ export async function createTeacher(tenantId: string, data: {
         email: data.email,
         name: data.name,
         surname: data.surname,
-        dni: data.dni,
         phone: data.phone,
         role: 'PROFESOR',
         password: hashedPassword,
@@ -92,9 +91,20 @@ export async function updateTeacher(
 }
 
 export async function deleteTeacher(teacherId: string, tenantId: string) {
-  return prisma.teacher.update({
+  // Eliminar usuario asociado
+  const teacher = await prisma.teacher.findFirst({
     where: { id: teacherId, tenantId },
-    data: { deletedAt: new Date() },
+  })
+
+  if (teacher) {
+    await prisma.user.deleteMany({
+      where: { email: teacher.email, tenantId, role: 'PROFESOR' },
+    })
+  }
+
+  // Eliminar profesor permanentemente
+  return prisma.teacher.delete({
+    where: { id: teacherId },
   })
 }
 
@@ -105,7 +115,6 @@ export async function getTeachersByTenant(tenantId: string) {
   })
 }
 
-// Nueva función para restablecer contraseña
 export async function resetTeacherPassword(teacherId: string, tenantId: string, newPassword?: string) {
   const teacher = await prisma.teacher.findFirst({
     where: { id: teacherId, tenantId },
@@ -119,7 +128,7 @@ export async function resetTeacherPassword(teacherId: string, tenantId: string, 
   const hashedPassword = await bcrypt.hash(password, 12)
 
   await prisma.user.updateMany({
-    where: { dni: teacher.dni, tenantId },
+    where: { email: teacher.email, tenantId, role: 'PROFESOR' },
     data: { password: hashedPassword },
   })
 

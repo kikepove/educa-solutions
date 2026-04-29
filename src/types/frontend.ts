@@ -5,7 +5,6 @@ export interface User {
   email: string
   name: string
   surname?: string
-  dni?: string
   phone?: string
   avatar?: string
   role: UserRole
@@ -45,7 +44,7 @@ export interface Classroom {
 
 export interface Teacher {
   id: string
-  dni: string
+  code: string
   name: string
   surname: string
   email: string
@@ -57,7 +56,7 @@ export interface Teacher {
 
 export interface Technician {
   id: string
-  dni: string
+  code: string
   name: string
   surname: string
   email: string

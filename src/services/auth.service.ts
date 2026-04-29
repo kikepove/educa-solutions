@@ -19,7 +19,6 @@ export async function createUser(data: CreateUserInput & { tenantId?: string }) 
       password: hashedPassword,
       name: data.name,
       surname: data.surname,
-      dni: data.dni,
       phone: data.phone,
       role: data.role,
       tenantId: data.tenantId,

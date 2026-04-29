@@ -112,14 +112,14 @@ export async function updateTenant(id: string, data: Partial<CreateTenantInput>)
 }
 
 export async function deleteTenant(id: string) {
-  await prisma.tenant.update({
-    where: { id },
-    data: { isActive: false },
+  // Eliminar permanentemente los usuarios asociados al centro
+  await prisma.user.deleteMany({
+    where: { tenantId: id },
   })
 
-  await prisma.user.updateMany({
-    where: { tenantId: id },
-    data: { isActive: false },
+  // Eliminar permanentemente el centro (cascade borra classrooms, teachers, incidents, etc.)
+  await prisma.tenant.delete({
+    where: { id },
   })
 }
 

@@ -27,7 +27,7 @@ export default function ProfesoresPage() {
   const [csvErrors, setCsvErrors] = useState<string[]>([])
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
-  const [formData, setFormData] = useState({ dni: '', name: '', surname: '', email: '', phone: '', department: '' })
+  const [formData, setFormData] = useState({ name: '', surname: '', email: '', phone: '', department: '' })
 
   const { mutate: createProfesor } = useMutationApi(
     (data: typeof formData) => fetchApi('/profesores', { method: 'POST', body: JSON.stringify(data) })
@@ -60,7 +60,7 @@ export default function ProfesoresPage() {
     try {
       await createProfesor(formData)
       setShowModal(false)
-      setFormData({ dni: '', name: '', surname: '', email: '', phone: '', department: '' })
+      setFormData({ name: '', surname: '', email: '', phone: '', department: '' })
       loadProfesores()
       addNotification({ type: 'success', message: 'Profesor creado correctamente' })
     } catch (error: any) {
@@ -87,7 +87,7 @@ export default function ProfesoresPage() {
       }
       
       const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
-      const required = ['dni', 'name', 'surname', 'email']
+      const required = ['name', 'surname', 'email']
       const missing = required.filter(r => !headers.includes(r))
       
       if (missing.length > 0) {
@@ -130,7 +130,7 @@ export default function ProfesoresPage() {
   }
 
   const columns: Column<Teacher>[] = [
-    { key: 'dni', header: 'DNI', render: (p) => <code className="text-xs bg-slate-100 px-2 py-1 rounded">{p.dni}</code> },
+    { key: 'code', header: 'Código', render: (p) => <code className="text-xs bg-slate-100 px-2 py-1 rounded">{p.code}</code> },
     { key: 'name', header: 'Nombre', render: (p) => <span className="font-medium">{p.name} {p.surname}</span> },
     { key: 'email', header: 'Email', render: (p) => <span className="text-slate-600">{p.email}</span> },
     { key: 'phone', header: 'Teléfono', render: (p) => p.phone || '-' },
@@ -142,7 +142,7 @@ export default function ProfesoresPage() {
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.surname.toLowerCase().includes(search.toLowerCase()) ||
     p.email.toLowerCase().includes(search.toLowerCase()) ||
-    p.dni.toLowerCase().includes(search.toLowerCase())
+    p.code.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -155,7 +155,7 @@ export default function ProfesoresPage() {
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setShowCSVModal(true)}>
             <Upload className="w-4 h-4" />
-            Importar CSV (Obligatorio)
+            Importar CSV
           </Button>
           <Button onClick={() => setShowModal(true)}>
             <Plus className="w-4 h-4" />
@@ -185,7 +185,6 @@ export default function ProfesoresPage() {
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Nuevo Profesor" size="md">
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="DNI" placeholder="12345678A" value={formData.dni} onChange={(e) => setFormData({...formData, dni: e.target.value})} />
             <Input label="Email" type="email" placeholder="profesor@centro.com" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -198,7 +197,7 @@ export default function ProfesoresPage() {
           </div>
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="ghost" onClick={() => setShowModal(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={!formData.dni || !formData.name || !formData.surname || !formData.email}>Crear profesor</Button>
+            <Button onClick={handleCreate} disabled={!formData.name || !formData.surname || !formData.email}>Crear profesor</Button>
           </div>
         </div>
       </Modal>
@@ -209,8 +208,8 @@ export default function ProfesoresPage() {
             <div className="flex items-start gap-2">
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium">Importación obligatoria</p>
-                <p className="text-sm mt-1">El archivo CSV debe contener las columnas: dni, name, surname, email (requeridos), phone, department (opcionales)</p>
+                <p className="font-medium">Importación de profesores</p>
+                <p className="text-sm mt-1">El archivo CSV debe contener las columnas: name, surname, email (requeridos), phone, department (opcionales)</p>
               </div>
             </div>
           </Alert>
@@ -231,7 +230,6 @@ export default function ProfesoresPage() {
                   <thead className="bg-slate-50">
                     <tr>
                       <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Fila</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">DNI</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Nombre</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Apellidos</th>
                       <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Email</th>
@@ -241,7 +239,6 @@ export default function ProfesoresPage() {
                     {csvPreview.map((row) => (
                       <tr key={row._row} className="hover:bg-slate-50">
                         <td className="px-3 py-2 text-slate-400">{row._row}</td>
-                        <td className="px-3 py-2">{row.dni}</td>
                         <td className="px-3 py-2">{row.name}</td>
                         <td className="px-3 py-2">{row.surname}</td>
                         <td className="px-3 py-2">{row.email}</td>

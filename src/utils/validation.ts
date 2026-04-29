@@ -19,7 +19,6 @@ export const createUserSchema = z.object({
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   name: z.string().min(2, 'El nombre es requerido'),
   surname: z.string().optional(),
-  dni: z.string().optional(),
   phone: z.string().optional(),
   role: z.enum(['ADMIN', 'TIC', 'PROFESOR', 'TECNICO', 'DIRECTOR']),
 })
@@ -37,7 +36,6 @@ export const createClassroomSchema = z.object({
 })
 
 export const createTeacherSchema = z.object({
-  dni: z.string().min(1, 'El DNI es requerido'),
   name: z.string().min(2, 'El nombre es requerido'),
   surname: z.string().min(2, 'Los apellidos son requeridos'),
   email: z.string().email('Email inválido'),
@@ -47,7 +45,6 @@ export const createTeacherSchema = z.object({
 })
 
 export const createTechnicianSchema = z.object({
-  dni: z.string().min(1, 'El DNI es requerido'),
   name: z.string().min(2, 'El nombre es requerido'),
   surname: z.string().min(2, 'Los apellidos son requeridos'),
   email: z.string().email('Email inválido'),
@@ -135,7 +132,6 @@ export const csvAulaSchema = z.object({
 })
 
 export const csvProfesorSchema = z.object({
-  dni: z.string().min(1),
   name: z.string().min(1),
   surname: z.string().min(1),
   email: z.string().email(),

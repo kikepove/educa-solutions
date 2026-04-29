@@ -3,10 +3,8 @@ import { parseCSV, generateCSVTemplate } from '@/utils/csv-parser'
 import {
   createClassroomSchema,
   csvAulaSchema,
-  createTeacherSchema,
   csvProfesorSchema,
 } from '@/utils/validation'
-import type { CreateClassroomInput, CreateTeacherInput } from '@/utils/validation'
 
 export async function importClassrooms(tenantId: string, csvContent: string) {
   const result = parseCSV(csvContent, csvAulaSchema, ['name', 'code'])
@@ -51,7 +49,7 @@ export async function importClassrooms(tenantId: string, csvContent: string) {
 }
 
 export async function importTeachers(tenantId: string, csvContent: string) {
-  const result = parseCSV(csvContent, csvProfesorSchema, ['dni', 'name', 'surname', 'email'])
+  const result = parseCSV(csvContent, csvProfesorSchema, ['name', 'surname', 'email'])
 
   if (result.errors.length > 0 && result.data.length === 0) {
     throw new Error(`Error al parsear CSV: ${result.errors[0].message}`)
@@ -64,11 +62,11 @@ export async function importTeachers(tenantId: string, csvContent: string) {
     for (const item of result.data) {
       try {
         const existing = await tx.teacher.findFirst({
-          where: { tenantId, dni: item.dni },
+          where: { tenantId, email: item.email },
         })
 
         if (existing) {
-          errors.push(`Profesor con DNI ${item.dni} ya existe`)
+          errors.push(`Profesor con email ${item.email} ya existe`)
           continue
         }
 
@@ -87,13 +85,12 @@ export async function importTeachers(tenantId: string, csvContent: string) {
         if (!userExists) {
           const bcrypt = require('bcryptjs')
           const tempPassword = Math.random().toString(36).slice(-8)
-          
+
           await tx.user.create({
             data: {
               email: item.email,
               name: item.name,
               surname: item.surname,
-              dni: item.dni,
               role: 'PROFESOR',
               password: await bcrypt.hash(tempPassword, 12),
               tenantId,
@@ -101,7 +98,7 @@ export async function importTeachers(tenantId: string, csvContent: string) {
           })
         }
       } catch (error: any) {
-        errors.push(`Error creando profesor ${item.dni}: ${error.message}`)
+        errors.push(`Error creando profesor ${item.email}: ${error.message}`)
       }
     }
   })
@@ -138,7 +135,7 @@ export async function exportTeachers(tenantId: string) {
   })
 
   return teachers.map((t) => ({
-    dni: t.dni,
+    code: t.code,
     name: t.name,
     surname: t.surname,
     email: t.email,
@@ -152,10 +149,10 @@ export function getClassroomCSVTemplate() {
 }
 
 export function getTeacherCSVTemplate() {
-  return generateCSVTemplate(['dni', 'name', 'surname', 'email', 'phone', 'department'])
+  return generateCSVTemplate(['name', 'surname', 'email', 'phone', 'department'])
 }
 
-export async function createClassroom(tenantId: string, data: CreateClassroomInput) {
+export async function createClassroom(tenantId: string, data: any) {
   const existing = await prisma.classroom.findFirst({
     where: { tenantId, code: data.code },
   })
@@ -175,7 +172,7 @@ export async function createClassroom(tenantId: string, data: CreateClassroomInp
 export async function updateClassroom(
   classroomId: string,
   tenantId: string,
-  data: Partial<CreateClassroomInput>
+  data: any
 ) {
   const classroom = await prisma.classroom.findFirst({
     where: { id: classroomId, tenantId },
@@ -198,13 +195,13 @@ export async function deleteClassroom(classroomId: string, tenantId: string) {
   })
 }
 
-export async function createTeacher(tenantId: string, data: CreateTeacherInput) {
+export async function createTeacher(tenantId: string, data: any) {
   const existing = await prisma.teacher.findFirst({
-    where: { tenantId, dni: data.dni },
+    where: { tenantId, email: data.email },
   })
 
   if (existing) {
-    throw new Error('Ya existe un profesor con ese DNI')
+    throw new Error('Ya existe un profesor con ese email')
   }
 
   return prisma.teacher.create({
@@ -218,7 +215,7 @@ export async function createTeacher(tenantId: string, data: CreateTeacherInput) 
 export async function updateTeacher(
   teacherId: string,
   tenantId: string,
-  data: Partial<CreateTeacherInput>
+  data: any
 ) {
   const teacher = await prisma.teacher.findFirst({
     where: { id: teacherId, tenantId },

@@ -106,7 +106,6 @@ model User {
   password  String
   name      String
   surname   String?
-  dni       String?   @unique
   phone     String?
   avatar    String?
   role      UserRole  @default(PROFESOR)
@@ -119,6 +118,9 @@ model User {
   tenantId String?
   tenant   Tenant? @relation("TenantUsers", fields: [tenantId], references: [id], onDelete: SetNull)
 
+  technicianId String? @unique
+  technician   Technician? @relation("TechnicianUser", fields: [technicianId], references: [id], onDelete: SetNull)
+
   accounts                   Account[]
   sessions                   Session[]
   createdIncidents           Incident[]           @relation("CreatedByIncidents")
@@ -130,6 +132,7 @@ model User {
   @@index([email])
   @@index([tenantId])
   @@index([role])
+  @@index([technicianId])
 }
 
 model Account {
@@ -169,7 +172,7 @@ model VerificationToken {
 
 model Teacher {
   id         String    @id @default(cuid())
-  dni        String    @unique
+  code       String    @unique @default(cuid())
   name       String
   surname    String
   email      String
@@ -189,14 +192,15 @@ model Teacher {
   substituteGuardDuties GuardDuty[]           @relation("SubstituteTeacher")
   availabilities        TeacherAvailability[] @relation("TeacherAvailabilities")
 
-  @@unique([tenantId, dni])
+  @@unique([tenantId, code])
   @@index([tenantId])
   @@index([email])
+  @@index([code])
 }
 
 model Technician {
   id          String    @id @default(cuid())
-  dni         String    @unique
+  code        String    @unique @default(cuid())
   name        String
   surname     String
   email       String    @unique
@@ -205,14 +209,14 @@ model Technician {
   isActive    Boolean   @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
 
   technicianTenants TechnicianTenant[]
   incidents         Incident[]         @relation("TechnicianIncidents")
   inventoryItems    InventoryItem[]    @relation("TechnicianInventoryItems")
+  user              User?              @relation("TechnicianUser")
 
   @@index([email])
-  @@index([dni])
+  @@index([code])
 }
 
 model TechnicianTenant {
