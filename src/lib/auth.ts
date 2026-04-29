@@ -22,7 +22,10 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        console.log('[AUTH] Attempting login for:', credentials?.email)
+        
         if (!credentials?.email || !credentials?.password) {
+          console.log('[AUTH] Missing credentials')
           throw new Error('Credenciales requeridas')
         }
 
@@ -31,23 +34,31 @@ export const authOptions: NextAuthOptions = {
           include: { tenant: true },
         })
 
+        console.log('[AUTH] Found user:', user?.id, 'isActive:', user?.isActive)
+
         if (!user || !user.password) {
+          console.log('[AUTH] User not found or no password')
           throw new Error('Usuario no encontrado')
         }
 
         if (!user.isActive) {
+          console.log('[AUTH] User is inactive')
           throw new Error('Usuario desactivado')
         }
 
         if (user.tenantId && user.tenant && !user.tenant.isActive) {
+          console.log('[AUTH] Tenant is inactive')
           throw new Error('Centro desactivado')
         }
 
         const isPasswordValid = await bcrypt.compare(credentials.password, user.password)
 
         if (!isPasswordValid) {
+          console.log('[AUTH] Invalid password')
           throw new Error('Contraseña incorrecta')
         }
+
+        console.log('[AUTH] Login successful for:', user.email, 'role:', user.role)
 
         await prisma.user.update({
           where: { id: user.id },
