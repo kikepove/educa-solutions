@@ -1,9 +1,8 @@
 import prisma from '@/lib/db'
 import bcrypt from 'bcryptjs'
-import type { CreateUserInput } from '@/utils/validation'
+import { randomUUID } from 'crypto'
 
 export async function createTechnician(tenantId: string, data: {
-  dni: string
   name: string
   surname: string
   email: string
@@ -11,19 +10,22 @@ export async function createTechnician(tenantId: string, data: {
   specialties?: string[]
   password?: string
 }, tenantIds?: string[]) {
-  console.log('[createTechnician] Starting with:', { tenantId, dataDni: data.dni, dataEmail: data.email, tenantIds })
+  console.log('[createTechnician] Starting with:', { tenantId, dataEmail: data.email, tenantIds })
 
   try {
-    // Verificar si ya existe un técnico con ese DNI o email
+    // Verificar si ya existe un técnico con ese email
     const existing = await prisma.technician.findFirst({
-      where: { OR: [{ dni: data.dni }, { email: data.email }] },
+      where: { email: data.email },
     })
 
     if (existing) {
       console.log('[createTechnician] Existing found:', existing.id)
-      throw new Error('Ya existe un técnico con ese DNI o email')
+      throw new Error('Ya existe un técnico con ese email')
     }
 
+    // Generar un identificador único
+    const identifier = randomUUID().substring(0, 8)
+    
     // Si no se proporciona contraseña, generar una temporal
     const finalPassword = data.password || Math.random().toString(36).slice(-8)
     console.log('[createTechnician] Generated password')
@@ -34,7 +36,7 @@ export async function createTechnician(tenantId: string, data: {
     console.log('[createTechnician] Creating technician in DB...')
     const technician = await prisma.technician.create({
       data: {
-        dni: data.dni,
+        dni: identifier,
         name: data.name,
         surname: data.surname,
         email: data.email,
@@ -51,7 +53,7 @@ export async function createTechnician(tenantId: string, data: {
         email: data.email,
         name: data.name,
         surname: data.surname,
-        dni: data.dni,
+        dni: identifier,
         phone: data.phone,
         role: 'TECNICO',
         password: hashedPassword,

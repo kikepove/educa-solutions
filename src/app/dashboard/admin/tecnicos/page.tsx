@@ -35,7 +35,6 @@ export default function AdminTecnicosPage() {
   const [deleting, setDeleting] = useState(false)
   const [selectedTenantIds, setSelectedTenantIds] = useState<string[]>([])
   const [formData, setFormData] = useState({
-    dni: '',
     name: '',
     surname: '',
     email: '',
@@ -134,14 +133,13 @@ export default function AdminTecnicosPage() {
   }
 
   const resetForm = () => {
-    setFormData({ dni: '', name: '', surname: '', email: '', phone: '', password: '', specialties: [] })
+    setFormData({ name: '', surname: '', email: '', phone: '', password: '', specialties: [] })
     setSelectedTenantIds([])
   }
 
   const openEditModal = (tech: TechnicianWithTenants) => {
     setSelectedTech(tech)
     setFormData({
-      dni: tech.dni || '',
       name: tech.name || '',
       surname: tech.surname || '',
       email: tech.email || '',
@@ -273,12 +271,6 @@ export default function AdminTecnicosPage() {
       <Modal isOpen={showModal} onClose={() => { setShowModal(false); setSelectedTech(null); resetForm() }} 
         title={selectedTech ? 'Editar Técnico' : 'Nuevo Técnico'} size="lg">
         <div className="space-y-4">
-          <Input
-            label="DNI"
-            placeholder="12345678A"
-            value={formData.dni}
-            onChange={(e) => setFormData({ ...formData, dni: e.target.value })}
-          />
           <div className="grid grid-cols-2 gap-4">
             <Input
               label="Nombre"

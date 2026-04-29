@@ -5,7 +5,6 @@ import { hasPermission } from '@/utils/permissions'
 import { z } from 'zod'
 
 const createTechnicianSchema = z.object({
-  dni: z.string().min(1, 'El DNI es requerido'),
   name: z.string().min(2, 'El nombre es requerido'),
   surname: z.string().min(2, 'Los apellidos son requeridos'),
   email: z.string().email('Email inválido'),
