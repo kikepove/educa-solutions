@@ -7,28 +7,40 @@ export async function GET() {
     const email = 'kike.poveda@gmail.com'
     const password = 'test123'
     
-    console.log('[DEBUG] Processing password reset for:', email)
-    
-    // First check current state
-    const currentUser = await prisma.user.findUnique({
+    // Check user with tenant (same as authorize)
+    const user = await prisma.user.findUnique({
       where: { email },
+      include: { tenant: true },
     })
     
-    console.log('[DEBUG] Current user state:', {
-      id: currentUser?.id,
-      hasPassword: !!currentUser?.password,
-      isActive: currentUser?.isActive,
-      role: currentUser?.role,
-    })
+    if (!user) {
+      return NextResponse.json({ 
+        error: 'Usuario no encontrado en la base de datos',
+        step: 'findUser'
+      })
+    }
     
-    // Hash password with bcrypt
+    const checks = {
+      userExists: true,
+      hasPassword: !!user.password,
+      isActive: user.isActive,
+      tenantId: user.tenantId,
+      tenantExists: user.tenant ? true : false,
+      tenantIsActive: user.tenant?.isActive,
+      deletedAt: user.deletedAt,
+    }
+    
+    // Check password
+    let passwordWorks = false
+    if (user.password) {
+      passwordWorks = await bcrypt.compare(password, user.password)
+    }
+    
+    // Reset password
     const salt = await bcrypt.genSalt(12)
     const hashedPassword = await bcrypt.hash(password, salt)
     
-    console.log('[DEBUG] New hash:', hashedPassword.substring(0, 20))
-    
-    // Update user with new password and ensure active
-    const updated = await prisma.user.update({
+    await prisma.user.update({
       where: { email },
       data: { 
         password: hashedPassword,
@@ -36,36 +48,29 @@ export async function GET() {
       },
     })
     
-    console.log('[DEBUG] Updated:', updated.id, 'isActive:', updated.isActive)
-    
-    // Verify the update worked
+    // Verify again
     const verifyUser = await prisma.user.findUnique({
       where: { email },
-      select: {
-        id: true,
-        email: true,
-        isActive: true,
-        password: true,
-      },
+      include: { tenant: true },
     })
     
-    console.log('[DEBUG] Verified:', verifyUser)
-    
-    // Check if password works
-    const testMatch = await bcrypt.compare(password, verifyUser!.password!)
-    console.log('[DEBUG] Password test:', testMatch)
+    const passwordWorksAfterReset = await bcrypt.compare(password, verifyUser!.password!)
     
     return NextResponse.json({ 
       success: true,
       message: 'Password reset done. Try test123',
-      user: {
-        email: verifyUser?.email,
-        isActive: verifyUser?.isActive,
-        passwordWorks: testMatch,
+      checks,
+      passwordWorksBeforeReset: passwordWorks,
+      passwordWorksAfterReset,
+      nextAuthSimulation: {
+        wouldFail: !verifyUser.isActive || !passwordWorksAfterReset || (verifyUser.tenantId && verifyUser.tenant && !verifyUser.tenant.isActive),
+        reason: !verifyUser.isActive ? 'Usuario desactivado' : 
+                !passwordWorksAfterReset ? 'Contraseña incorrecta' :
+                (verifyUser.tenantId && verifyUser.tenant && !verifyUser.tenant.isActive) ? 'Centro desactivado' :
+                'OK - debería funcionar'
       }
     })
   } catch (error: any) {
-    console.error('[DEBUG] Error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: error.message, stack: error.stack }, { status: 500 })
   }
 }
