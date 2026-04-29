@@ -250,7 +250,7 @@ export default function CentroHorariosPage() {
           </div>
           <Select
             value={filterDay}
-            onChange={(e) => { setFilterDay(e.target.value); setTimeout(loadSchedules, 0) }}
+            onChange={(value) => { setFilterDay(value); setTimeout(loadSchedules, 0) }}
             options={[
               { value: '', label: 'Todos los días' },
               { value: 'LUNES', label: 'Lunes' },
@@ -263,7 +263,7 @@ export default function CentroHorariosPage() {
           />
           <Select
             value={filterClassroom}
-            onChange={(e) => { setFilterClassroom(e.target.value); setTimeout(loadSchedules, 0) }}
+            onChange={(value) => { setFilterClassroom(value); setTimeout(loadSchedules, 0) }}
             options={[
               { value: '', label: 'Todas las aulas' },
               ...classrooms.map(c => ({ value: c.id, label: c.name })),
@@ -272,7 +272,7 @@ export default function CentroHorariosPage() {
           />
           <Select
             value={filterTeacher}
-            onChange={(e) => { setFilterTeacher(e.target.value); setTimeout(loadSchedules, 0) }}
+            onChange={(value) => { setFilterTeacher(value); setTimeout(loadSchedules, 0) }}
             options={[
               { value: '', label: 'Todos los profesores' },
               ...teachers.map(t => ({ value: t.id, label: `${t.name} ${t.surname}` })),
@@ -305,7 +305,7 @@ export default function CentroHorariosPage() {
             <Select
               label="Día"
               value={formData.day}
-              onChange={(e) => setFormData({ ...formData, day: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, day: value })}
               options={[
                 { value: 'LUNES', label: 'Lunes' },
                 { value: 'MARTES', label: 'Martes' },
@@ -340,7 +340,7 @@ export default function CentroHorariosPage() {
           <Select
             label="Aula"
             value={formData.classroomId}
-            onChange={(e) => setFormData({ ...formData, classroomId: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, classroomId: value })}
             options={[
               { value: '', label: 'Selecciona un aula' },
               ...classrooms.map(c => ({ value: c.id, label: c.name })),
@@ -349,7 +349,7 @@ export default function CentroHorariosPage() {
           <Select
             label="Asignatura"
             value={formData.subjectId}
-            onChange={(e) => setFormData({ ...formData, subjectId: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, subjectId: value })}
             options={[
               { value: '', label: 'Selecciona asignatura' },
               ...subjects.map(s => ({ value: s.id, label: s.name })),
@@ -358,7 +358,7 @@ export default function CentroHorariosPage() {
           <Select
             label="Profesor"
             value={formData.teacherId}
-            onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, teacherId: value })}
             options={[
               { value: '', label: 'Selecciona profesor' },
               ...teachers.map(t => ({ value: t.id, label: `${t.name} ${t.surname}` })),

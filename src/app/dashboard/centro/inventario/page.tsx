@@ -182,7 +182,7 @@ export default function CentroInventarioPage() {
       render: (item) => {
         const colors: Record<string, 'success' | 'warning' | 'error' | 'neutral'> = {
           'DISPONIBLE': 'success',
-          'EN_USO': 'info',
+          'EN_USO': 'neutral',
           'EN_REPARACION': 'warning',
           'BAJA': 'error',
         }
@@ -266,7 +266,7 @@ export default function CentroInventarioPage() {
           </div>
           <Select
             value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
+            onChange={(value) => setFilterCategory(value)}
             options={[
               { value: '', label: 'Todas las categorías' },
               ...Array.from(new Set(items.map(i => i.category))).map(cat => ({ value: cat, label: cat })),
@@ -275,7 +275,7 @@ export default function CentroInventarioPage() {
           />
           <Select
             value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
+            onChange={(value) => setFilterStatus(value)}
             options={[
               { value: '', label: 'Todos los estados' },
               { value: 'DISPONIBLE', label: 'Disponible' },
@@ -316,7 +316,7 @@ export default function CentroInventarioPage() {
             <Select
               label="Categoría"
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, category: value })}
               options={[
                 { value: '', label: 'Selecciona categoría' },
                 { value: 'Ordenador', label: 'Ordenador' },
@@ -346,7 +346,7 @@ export default function CentroInventarioPage() {
             <Select
               label="Estado"
               value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, status: value })}
               options={[
                 { value: 'DISPONIBLE', label: 'Disponible' },
                 { value: 'EN_USO', label: 'En uso' },
@@ -357,7 +357,7 @@ export default function CentroInventarioPage() {
             <Select
               label="Aula (opcional)"
               value={formData.classroomId}
-              onChange={(e) => setFormData({ ...formData, classroomId: e.target.value })}
+              onChange={(value) => setFormData({ ...formData, classroomId: value })}
               options={[
                 { value: '', label: 'Ninguna' },
                 ...classrooms.map(c => ({ value: c.id, label: c.name })),

@@ -275,7 +275,7 @@ export default function ProfesorGuardiasPage() {
           <Select
             label="Tipo"
             value={formData.type}
-            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+            onChange={(value) => setFormData({ ...formData, type: value })}
             options={[
               { value: 'ORDINARIA', label: 'Ordinaria' },
               { value: 'EXTRAORDINARIA', label: 'Extraordinaria' },
