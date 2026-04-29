@@ -13,14 +13,30 @@ export async function createTechnician(tenantId: string, data: {
   console.log('[createTechnician] Starting with:', { tenantId, dataEmail: data.email, tenantIds })
 
   try {
-    // Verificar si ya existe un técnico con ese email
+    // Verificar si ya existe un técnico activo con ese email
     const existing = await prisma.technician.findFirst({
-      where: { email: data.email },
+      where: { 
+        email: data.email,
+        deletedAt: null,
+      },
     })
 
     if (existing) {
-      console.log('[createTechnician] Existing found:', existing.id)
-      throw new Error('Ya existe un técnico con ese email')
+      console.log('[createTechnician] Existing active technician found:', existing.id)
+      throw new Error('Ya existe un técnico activo con ese email')
+    }
+
+    // Verificar si ya existe un usuario activo con ese email
+    const existingUser = await prisma.user.findFirst({
+      where: { 
+        email: data.email,
+        isActive: true,
+      },
+    })
+
+    if (existingUser) {
+      console.log('[createTechnician] Existing active user found:', existingUser.id)
+      throw new Error('Ya existe un usuario activo con ese email')
     }
 
     // Generar un identificador único
