@@ -135,6 +135,7 @@ export async function updateTechnician(
     specialties: string[]
     isActive: boolean
     password?: string
+    tenantIds?: string[]
   }>
 ) {
   console.log('[updateTechnician] Starting:', { technicianId, userRole, data })
@@ -163,15 +164,36 @@ export async function updateTechnician(
 
   console.log('[updateTechnician] Found:', technician.id, technician.dni)
 
-  // Separar password del resto de datos (Technician no tiene campo password)
-  const { password, ...technicianData } = data
+  // Separar password y tenantIds del resto de datos (Technician no tiene estos campos)
+  const { password, tenantIds, ...technicianData } = data
   
-  // Actualizar técnico (sin password)
+  // Actualizar técnico (sin password ni tenantIds)
   const updated = await prisma.technician.update({
     where: { id: technicianId },
     data: technicianData,
   })
   console.log('[updateTechnician] Updated technician')
+
+  // Actualizar asignaciones de centros si se proporcionan tenantIds
+  if (tenantIds !== undefined) {
+    console.log('[updateTechnician] Updating tenant assignments:', tenantIds)
+    
+    // Eliminar asignaciones existentes
+    await prisma.technicianTenant.deleteMany({
+      where: { technicianId },
+    })
+    
+    // Crear nuevas asignaciones
+    if (tenantIds.length > 0) {
+      await prisma.technicianTenant.createMany({
+        data: tenantIds.map(tid => ({
+          technicianId,
+          tenantId: tid,
+        })),
+      })
+    }
+    console.log('[updateTechnician] Updated tenant assignments')
+  }
 
   // Actualizar también el usuario asociado
   const userData: any = {}

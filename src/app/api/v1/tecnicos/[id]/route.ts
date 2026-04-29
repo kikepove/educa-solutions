@@ -23,7 +23,11 @@ export async function PUT(
     console.log('[DEBUG PUT tecnico] body:', body)
     console.log('[DEBUG PUT tecnico] params.id:', params.id)
     
-    const technician = await updateTechnician(params.id, user.tenantId, user.role, body)
+    // Extraer tenantIds del body para pasarlo al servicio
+    const { tenantIds, ...restBody } = body
+    const updateData = { ...restBody, tenantIds }
+    
+    const technician = await updateTechnician(params.id, user.tenantId, user.role, updateData)
     return NextResponse.json(technician)
   } catch (error: any) {
     console.error('[DEBUG PUT tecnico] error:', error.message)

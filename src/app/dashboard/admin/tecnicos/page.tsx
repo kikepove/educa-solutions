@@ -101,10 +101,11 @@ export default function AdminTecnicosPage() {
   const handleUpdate = async () => {
     setSaving(true)
     try {
-      // Enviar solo los campos que queremos actualizar (sin tenantIds)
+      // Enviar campos a actualizar incluyendo tenantIds
+      const payload = { ...formData, tenantIds: selectedTenantIds }
       await fetchApi<any>(`/tecnicos/${selectedTech?.id}`, { 
         method: 'PUT', 
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       })
       setShowModal(false)
       setSelectedTech(null)
